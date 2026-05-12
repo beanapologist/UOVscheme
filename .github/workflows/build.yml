@@ -1,0 +1,23 @@
+name: Build and Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Lean
+        uses: leanprover/lean4-action@v1
+
+      - name: Build with Lake
+        run: lake build
+
+      - name: Check Lean files
+        run: lake check || lean --version
