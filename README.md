@@ -203,7 +203,7 @@ Contributions are welcome! Areas for enhancement:
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [Creative Commons](LICENSE).
 
 ---
 
