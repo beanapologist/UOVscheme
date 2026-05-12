@@ -12,9 +12,9 @@
   are coupled through the interrogation.
 -/
 
-import OilVinegar
-import DualityStructure
-import BalanceHypothesis
+import UOVscheme.OilVinegar
+import UOVscheme.DualityStructure
+import UOVscheme.BalanceHypothesis
 
 open Complex Real
 

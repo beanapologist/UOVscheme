@@ -20,8 +20,8 @@
   current mathematics.
 -/
 
-import SecurityModel
-import CentralMap
+import UOVscheme.SecurityModel
+import UOVscheme.CentralMap
 
 variable {q o v : ℕ}
 

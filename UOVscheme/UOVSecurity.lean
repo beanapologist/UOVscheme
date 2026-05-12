@@ -25,8 +25,8 @@
   Axiom count: 2 (reduction bound + MQ hardness).  No sorry.
 -/
 
-import MQProblem
-import SchemeCorrectness
+import UOVscheme.MQProblem
+import UOVscheme.SchemeCorrectness
 
 variable {q o v : ℕ}
 

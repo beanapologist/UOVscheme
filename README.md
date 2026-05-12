@@ -58,22 +58,27 @@ Alice knows which variables are oil and which are vinegar (the Re/Im split). Thi
 
 ```
 UOVscheme/
-├── OilVinegar.lean          # C, η, μ and their properties (all proved)
-├── DualityStructure.lean    # Abstract witness/observer framework
-├── BalanceHypothesis.lean   # Four constraints + uniqueness theorem
-├── UOV.lean                 # Duality lens applied to OV
-├── CentralMap.lean          # Actual UOV map over ZMod q; linearization
-├── SchemeCorrectness.lean   # UOVKey, Sign, Verify, correctness theorem
-├── SecurityModel.lean       # Negligible, PPT (axiomatized)
-├── MQProblem.lean           # MQ adversary, MQ.hard axiom
-└── UOVSecurity.lean         # EUF-CMA theorem (proved from two axioms)
+├── lakefile.lean
+├── UOVscheme/                   # Lean source (all modules)
+│   ├── OilVinegar.lean          #   C, η, μ and their properties (all proved)
+│   ├── DualityStructure.lean    #   Abstract witness/observer framework
+│   ├── BalanceHypothesis.lean   #   Four constraints + uniqueness theorem
+│   ├── UOV.lean                 #   Duality lens applied to OV
+│   ├── CentralMap.lean          #   Actual UOV map over ZMod q; linearization
+│   ├── SchemeCorrectness.lean   #   UOVKey, Sign, Verify, correctness theorem
+│   ├── SecurityModel.lean       #   Negligible, PPT (axiomatized)
+│   ├── MQProblem.lean           #   MQ adversary, MQ.hard axiom
+│   └── UOVSecurity.lean         #   EUF-CMA theorem (proved from two axioms)
+└── Test/                        # Empirical tests (native_decide + #eval)
+    ├── CentralMapTest.lean      #   Linearization checks over ZMod 7
+    └── SchemeTest.lean          #   Sign/Verify round trips, forged sig rejection
 ```
 
 ---
 
 ## What Is Proved
 
-### Duality layer (OilVinegar.lean, BalanceHypothesis.lean)
+### Duality layer (UOVscheme/OilVinegar.lean, UOVscheme/BalanceHypothesis.lean)
 
 | Theorem | Statement |
 |---|---|
@@ -89,7 +94,7 @@ UOVscheme/
 | `reality_unique` | The three constraints uniquely determine `μ` |
 | `unified_balance` | `∃! w : ℂ, |w| = 1 ∧ −w.re = w.im ∧ w.re < 0` |
 
-### Cryptographic layer (CentralMap.lean, SchemeCorrectness.lean)
+### Cryptographic layer (UOVscheme/CentralMap.lean, UOVscheme/SchemeCorrectness.lean)
 
 | Theorem | Statement |
 |---|---|
@@ -98,7 +103,7 @@ UOVscheme/
 | `UOVKey.correctness` | Sign always produces a valid signature |
 | `forgery_iff_mq_preimage` | A valid forgery iff `publicEval σ = y` |
 
-### Security layer (SecurityModel.lean, UOVSecurity.lean)
+### Security layer (UOVscheme/SecurityModel.lean, UOVscheme/UOVSecurity.lean)
 
 | Theorem | Statement |
 |---|---|

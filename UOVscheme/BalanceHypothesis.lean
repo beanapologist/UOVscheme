@@ -7,7 +7,7 @@
   everything here is a genuine Lean proposition.
 -/
 
-import OilVinegar
+import UOVscheme.OilVinegar
 
 open Complex Real
 

@@ -17,7 +17,7 @@
     Verify(pk, y, σ): check P(σ) = y
 -/
 
-import CentralMap
+import UOVscheme.CentralMap
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.Data.Fin.Tuple.Basic
 
