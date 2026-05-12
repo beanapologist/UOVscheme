@@ -37,7 +37,7 @@ jobs:
 
       - name: cargo test
         working-directory: impl/rust
-        run: cargo test --all-targets -- --test-output immediate
+        run: cargo test --all-targets
 
       - name: Run demo (smoke test)
         working-directory: impl/rust
