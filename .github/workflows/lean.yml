@@ -19,16 +19,14 @@ on:
       - '.github/workflows/lean.yml'
 
 jobs:
-  # Fast check that requires no Lean installation — always runs.
+  # Fast grep-based check — no Lean installation required.
   sorry-check:
     name: No sorry check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Check for sorry
         run: |
-          # Match `sorry` used as a Lean tactic or term (not the word in prose).
           if grep -rEn "(^|[[:space:]]|:=)[[:space:]]*sorry[[:space:]]*($|--)" \
                UOVscheme/ --include="*.lean" \
                | grep -v "^Binary file" \
@@ -38,7 +36,6 @@ jobs:
           fi
           echo "No unexpected sorry found."
 
-  # Full Lake build — downloads Lean 4.10.0 directly (bypasses elan CDN).
   build:
     name: Lake build
     runs-on: ubuntu-latest
@@ -54,34 +51,38 @@ jobs:
             .lake/packages
             .lake/build
           key: lean-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lakefile.lean') }}
-          restore-keys: |
-            lean-${{ runner.os }}-
+          restore-keys: lean-${{ runner.os }}-
 
       - name: Install Lean 4.10.0
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           if [ -x /opt/lean4/bin/lean ]; then
-            echo "Lean already cached."
+            echo "Using cached Lean."
           else
-            echo "Downloading Lean 4.10.0..."
+            echo "Downloading lean-4.10.0-linux.zip ..."
             curl -fSL \
-              https://github.com/leanprover/lean4/releases/download/v4.10.0/lean-4.10.0-linux.tar.zst \
-              -o /tmp/lean.tar.zst
+              https://github.com/leanprover/lean4/releases/download/v4.10.0/lean-4.10.0-linux.zip \
+              -o /tmp/lean.zip
             sudo mkdir -p /opt/lean4
             sudo chown "$USER" /opt/lean4
-            cd /opt/lean4
-            zstd -d /tmp/lean.tar.zst --stdout | tar -x --strip-components=1
-            rm /tmp/lean.tar.zst
+            # zip top-level dir is lean-4.10.0-linux/; unzip into parent then rename
+            unzip -q /tmp/lean.zip -d /opt
+            mv /opt/lean-4.10.0-linux/* /opt/lean4/
+            rmdir /opt/lean-4.10.0-linux
+            rm /tmp/lean.zip
           fi
           echo "/opt/lean4/bin" >> "$GITHUB_PATH"
           /opt/lean4/bin/lean --version
           /opt/lean4/bin/lake --version
 
       - name: Update dependencies
-        run: lake update
+        run: |
+          set -x
+          which lake
+          lake update
 
       - name: Fetch Mathlib build cache
-        run: lake exe cache get || echo "Cache fetch failed — will build from source"
+        run: lake exe cache get || echo "Cache fetch failed — building from source"
 
       - name: Build library
         run: lake build UOVscheme
