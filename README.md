@@ -129,6 +129,8 @@ The security proof `uov_euf_cma` uses exactly two cryptographic axioms (`MQ.hard
 
 ## Building
 
+### Lean formalization
+
 ```bash
 git clone https://github.com/beanapologist/UOVscheme
 cd UOVscheme
@@ -136,6 +138,21 @@ lake build
 ```
 
 Requires Lean 4 and Lake. Mathlib is fetched automatically.
+
+### Python implementation
+
+```bash
+cd impl/python
+pip install numpy pytest
+python examples/demo.py        # Alice/Bob/Eve walkthrough
+python -m pytest tests/ -v     # 15 correctness tests
+```
+
+No dependencies beyond NumPy. Works with Python 3.10+.
+
+### C++ / Rust
+
+See `impl/cpp/README.md` and `impl/rust/README.md` — implementations planned.
 
 ---
 
