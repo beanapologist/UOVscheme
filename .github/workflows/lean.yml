@@ -28,11 +28,11 @@ jobs:
 
       - name: Install elan
         run: |
-          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
-          echo "$HOME/.elan/bin" >> $GITHUB_PATH
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- --default-toolchain none -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
-      # Cache the Mathlib build artifacts — keyed on the exact Mathlib commit
-      # embedded in the lake manifest so a bump auto-invalidates the cache.
       - name: Cache Lake packages
         uses: actions/cache@v4
         with:
@@ -40,12 +40,20 @@ jobs:
             ~/.elan
             .lake/packages
             .lake/build
-          key: lean-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lakefile.lean', 'lake-manifest.json') }}
+          key: lean-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lakefile.lean') }}
           restore-keys: |
             lean-${{ runner.os }}-
 
-      # lake update must run first so that the Mathlib `cache` executable
-      # exists before we try to call `lake exe cache get`.
+      - name: Install Lean toolchain
+        run: |
+          set -euo pipefail
+          TOOLCHAIN=$(cat lean-toolchain)
+          echo "Installing toolchain: $TOOLCHAIN"
+          elan toolchain install "$TOOLCHAIN"
+          elan override set "$TOOLCHAIN"
+          lean --version
+          lake --version
+
       - name: Update dependencies
         run: lake update
 
@@ -60,9 +68,6 @@ jobs:
 
       - name: Check for sorry
         run: |
-          # Match `sorry` used as a Lean tactic or term (not the word in prose).
-          # Patterns caught: "by sorry", ":= sorry", "  sorry" alone on a line.
-          # This avoids matching comments like "No sorry" or "sorry-free".
           if grep -rEn "(^|[[:space:]]|:=)[[:space:]]*sorry[[:space:]]*($|--)" \
                UOVscheme/ --include="*.lean" \
                | grep -v "^Binary file" \

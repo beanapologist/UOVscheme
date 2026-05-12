@@ -1,7 +1,7 @@
 import Lake
 open Lake DSL
 
-package UOVscheme where
+package UOVscheme
 
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4" @ "v4.10.0"
