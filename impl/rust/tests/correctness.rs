@@ -1,7 +1,7 @@
 //! Integration tests mirroring every Lean theorem.
 
-use uov::field::{dot, gauss_solve, gf_matinv, mat_mul_vec, Rng};
 use uov::central_map::{CentralMap, CentralMapComp};
+use uov::field::{dot, gauss_solve, gf_matinv, mat_mul_vec, Rng};
 use uov::keygen;
 
 // ── eval_affine ───────────────────────────────────────────────────────────────
@@ -11,14 +11,20 @@ fn test_eval_affine_exhaustive() {
     let (q, o, v) = (7u64, 2usize, 2usize);
     let mut rng = Rng::new(0);
     let comp = CentralMapComp::random(q, o, v, &mut rng);
-    for o0 in 0..q { for o1 in 0..q { for v0 in 0..q { for v1 in 0..q {
-        let oil = vec![o0, o1];
-        let vin = vec![v0, v1];
-        let lhs = comp.eval(&oil, &vin);
-        let lc = comp.lin_coeff(&vin);
-        let rhs = (dot(&oil, &lc, q) + comp.vin_const(&vin)) % q;
-        assert_eq!(lhs, rhs, "eval_affine at oil={:?} vin={:?}", oil, vin);
-    }}}}
+    for o0 in 0..q {
+        for o1 in 0..q {
+            for v0 in 0..q {
+                for v1 in 0..q {
+                    let oil = vec![o0, o1];
+                    let vin = vec![v0, v1];
+                    let lhs = comp.eval(&oil, &vin);
+                    let lc = comp.lin_coeff(&vin);
+                    let rhs = (dot(&oil, &lc, q) + comp.vin_const(&vin)) % q;
+                    assert_eq!(lhs, rhs, "eval_affine at oil={:?} vin={:?}", oil, vin);
+                }
+            }
+        }
+    }
 }
 
 #[test]
@@ -103,9 +109,15 @@ fn test_gauss_random() {
         let mut m = None;
         for _ in 0..20 {
             let candidate = rng.random_mat(n, n, q);
-            if gf_matinv(&candidate, q).is_some() { m = Some(candidate); break; }
+            if gf_matinv(&candidate, q).is_some() {
+                m = Some(candidate);
+                break;
+            }
         }
-        let m = match m { Some(x) => x, None => continue };
+        let m = match m {
+            Some(x) => x,
+            None => continue,
+        };
         let b: Vec<u64> = (0..n).map(|_| rng.next_field(q)).collect();
         let x = gauss_solve(&m, &b, q).unwrap();
         let check = mat_mul_vec(&m, &x, q);
@@ -164,7 +176,7 @@ fn test_forgery_rejected() {
     let msg: Vec<u64> = (0..o).map(|_| rng.next_field(q)).collect();
     let accepted: usize = (0..1000)
         .filter(|_| {
-            let f: Vec<u64> = (0..o+v).map(|_| erng.next_field(q)).collect();
+            let f: Vec<u64> = (0..o + v).map(|_| erng.next_field(q)).collect();
             key.verify(&msg, &f)
         })
         .count();

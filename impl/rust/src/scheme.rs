@@ -1,15 +1,15 @@
 //! UOVKey: public-key evaluation, signing, and verification.
 
 use crate::central_map::CentralMap;
-use crate::field::{gauss_solve, mat_mul_vec, mod_sub, Rng, Vec as FVec, Mat};
+use crate::field::{gauss_solve, mat_mul_vec, mod_sub, Mat, Rng, Vec as FVec};
 
 pub struct UOVKey {
     pub q: u64,
     pub o: usize,
     pub v: usize,
     pub f: CentralMap,
-    pub t: Mat,      // (o+v)×(o+v) invertible
-    pub t_inv: Mat,  // precomputed inverse
+    pub t: Mat,     // (o+v)×(o+v) invertible
+    pub t_inv: Mat, // precomputed inverse
 }
 
 impl UOVKey {

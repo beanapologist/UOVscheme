@@ -1,6 +1,6 @@
 //! Alice signs, Bob verifies, Eve fails  (GF(31), o=4, v=8)
 
-use uov::{keygen, field::Rng};
+use uov::{field::Rng, keygen};
 
 fn main() {
     let (q, o, v) = (31u64, 4usize, 8usize);
@@ -18,9 +18,13 @@ fn main() {
     let sig = key.sign(&msg, &mut sign_rng, 1000).expect("signing failed");
 
     print!("Alice's message :");
-    for x in &msg { print!(" {}", x); }
+    for x in &msg {
+        print!(" {}", x);
+    }
     print!("\nAlice's signature:");
-    for x in &sig { print!(" {}", x); }
+    for x in &sig {
+        print!(" {}", x);
+    }
     println!();
 
     // --- Bob verifies ---
@@ -31,7 +35,14 @@ fn main() {
     // --- Wrong message rejected ---
     let wrong: Vec<u64> = msg.iter().map(|&x| (x + 1) % q).collect();
     let wrong_ok = key.verify(&wrong, &sig);
-    println!("Wrong message   : {}", if wrong_ok { "BUG" } else { "correctly rejected" });
+    println!(
+        "Wrong message   : {}",
+        if wrong_ok {
+            "BUG"
+        } else {
+            "correctly rejected"
+        }
+    );
     assert!(!wrong_ok);
 
     // --- Eve tries 1000 random forgeries ---

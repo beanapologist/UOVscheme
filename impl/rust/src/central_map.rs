@@ -10,11 +10,11 @@ pub struct CentralMapComp {
     pub q: u64,
     pub o: usize,
     pub v: usize,
-    pub a: Mat,  // o×v — oil-vinegar cross terms
-    pub b: Mat,  // v×v — vinegar-vinegar quadratic terms
-    pub c: Vec,  // length o — linear oil coefficients
-    pub d: Vec,  // length v — linear vinegar coefficients
-    pub e: u64,  // constant term
+    pub a: Mat, // o×v — oil-vinegar cross terms
+    pub b: Mat, // v×v — vinegar-vinegar quadratic terms
+    pub c: Vec, // length o — linear oil coefficients
+    pub d: Vec, // length v — linear vinegar coefficients
+    pub e: u64, // constant term
 }
 
 impl CentralMapComp {
@@ -45,7 +45,9 @@ impl CentralMapComp {
 
     pub fn random(q: u64, o: usize, v: usize, rng: &mut Rng) -> Self {
         Self {
-            q, o, v,
+            q,
+            o,
+            v,
             a: rng.random_mat(o, v, q),
             b: rng.random_mat(v, v, q),
             c: rng.random_vec(o, q),
@@ -62,7 +64,7 @@ pub struct CentralMap {
     pub q: u64,
     pub o: usize,
     pub v: usize,
-    pub comps: std::vec::Vec<CentralMapComp>,  // length o
+    pub comps: std::vec::Vec<CentralMapComp>, // length o
 }
 
 impl CentralMap {
@@ -82,8 +84,12 @@ impl CentralMap {
 
     pub fn random(q: u64, o: usize, v: usize, rng: &mut Rng) -> Self {
         Self {
-            q, o, v,
-            comps: (0..o).map(|_| CentralMapComp::random(q, o, v, rng)).collect(),
+            q,
+            o,
+            v,
+            comps: (0..o)
+                .map(|_| CentralMapComp::random(q, o, v, rng))
+                .collect(),
         }
     }
 }
