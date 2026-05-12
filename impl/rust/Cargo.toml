@@ -1,0 +1,9 @@
+[package]
+name = "uov"
+version = "0.1.0"
+edition = "2021"
+description = "Oil-and-Vinegar signature scheme — Rust implementation"
+
+[[example]]
+name = "demo"
+path = "examples/demo.rs"
