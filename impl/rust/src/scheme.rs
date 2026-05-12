@@ -30,7 +30,7 @@ impl UOVKey {
             let rhs: FVec = (0..self.o).map(|i| mod_sub(y[i], b[i], self.q)).collect();
 
             if let Some(oil) = gauss_solve(&m, &rhs, self.q) {
-                let combined: FVec = oil.into_iter().chain(vin.into_iter()).collect();
+                let combined: FVec = oil.into_iter().chain(vin).collect();
                 return Some(mat_mul_vec(&self.t_inv, &combined, self.q));
             }
         }
