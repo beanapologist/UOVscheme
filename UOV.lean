@@ -67,8 +67,16 @@ theorem vinegar_V2_directed_balance :
     Because η = 1/√2, C(1 + √2) = 1/√2 perfectly holds.
 -/
 theorem vinegar_V3_self_referential_closure :
-    C (1 + 1 / η) = η :=
-  sorry -- Relies on SilverCoherence.lean or direct evaluation of η = 1/√2
+    C (1 + 1 / η) = η := by
+  -- Unfold to: 2*(1 + √2) / (1 + (1 + √2)²) = 1/√2
+  -- Cross-multiply: 2*(1+√2)*√2 = 1 + (1+√2)² = 4 + 2√2  ✓
+  have h2 : Real.sqrt 2 > 0 := Real.sqrt_pos.mpr (by norm_num)
+  have h2_sq : Real.sqrt 2 ^ 2 = 2 := Real.sq_sqrt (by norm_num)
+  have hη_ne : η ≠ 0 := by unfold η; positivity
+  unfold C η
+  have hsqrt_ne : Real.sqrt 2 ≠ 0 := ne_of_gt h2
+  field_simp
+  nlinarith [sq_nonneg (Real.sqrt 2), h2_sq]
 
 /-- **Vinegar collective**: All three observer constraints hold simultaneously.
 -/
@@ -207,16 +215,22 @@ theorem trapdoor_hardness_requires_observer_frame :
 -- ════════════════════════════════════════════════════════════════
 
 /-- **Public map stage 1**: Embedding (T).
-    The equilibrium point μ = F(η, -η) satisfies all constraints.
+    The equilibrium point μ = F(-η, η) satisfies all constraints.
+    Note: F(-η, η) = -η + i·η = e^(i·3π/4) = μ.
+    (The original F η (-η) was wrong: that gives η - iη, angle -π/4.)
 -/
 theorem public_map_embedding_T :
-    F η (-η) = μ := by
-  -- F(η, -η) = η + i·(-η) = η - i·η
-  -- We need to show this equals μ = e^(i·3π/4) = -η + i·η
-  -- This would require F to be defined differently or scaled appropriately.
-  -- For now, mark as requiring specific F definition:
-  unfold F μ η
-  sorry
+    F (-η) η = μ := by
+  -- F(-η, η) = ↑(-η) + I * ↑η  has  re = -η, im = η
+  -- μ = e^(i·3π/4)              has  re = -η  (mu_re_is_neg_eta)
+  --                                   im =  η  (mu_im_is_eta)
+  apply Complex.ext
+  · simp only [F, Complex.add_re, Complex.ofReal_re, Complex.mul_re,
+               Complex.I_re, Complex.I_im, Complex.ofReal_im]
+    linarith [mu_re_is_neg_eta]
+  · simp only [F, Complex.add_im, Complex.ofReal_im, Complex.mul_im,
+               Complex.I_re, Complex.I_im, Complex.ofReal_re]
+    linarith [mu_im_is_eta]
 
 /-- **Public map stage 2**: Interrogation (F).
 -/

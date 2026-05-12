@@ -1,60 +1,69 @@
 /-
-  BalanceHypothesis.lean — Core balance and constraint hypotheses.
-  
-  This module establishes the fundamental balance equations and constraints
-  that govern the Oil-and-Vinegar equilibrium.
+  BalanceHypothesis.lean — Core balance theorems for the OV equilibrium.
+
+  This module states the four constraints that uniquely determine μ,
+  proves each one, and derives the uniqueness theorem.  The original
+  file used string-literal types (vacuous) and a malformed ∃! statement;
+  everything here is a genuine Lean proposition.
 -/
+
+import OilVinegar
 
 open Complex Real
 
 noncomputable section BalanceHypothesis
 
-/-- Balance hypothesis 1: Energy conservation on the witness side.
-    
-    The witness's magnitude satisfies |z| = 1 (unit circle constraint).
-    This is the fundamental conservation law in the system.
--/
-hypothesis energy_conservation : ∀ z : ℂ, Complex.abs z = 1 → z.re ^ 2 + z.im ^ 2 = 1
+-- ════════════════════════════════════════════════════════════════
+-- The four constraints, each proved for μ
+-- ════════════════════════════════════════════════════════════════
 
-/-- Balance hypothesis 2: Directed balance linking real and imaginary parts.
-    
-    The observer's choice (imaginary) mirrors the witness's response (real):
-    Im(z) = -Re(z)
-    
-    This establishes a 45° diagonal constraint, breaking symmetry and
-    creating directedness in the interrogation.
--/
-hypothesis directed_balance : ∀ z : ℂ, -z.re = z.im → "Witness and observer are in opposite quadrants"
+/-- **Constraint 1 (Energy conservation)**: |z| = 1 implies z.re² + z.im² = 1.
+    For μ this follows directly from mu_energy_conserved. -/
+lemma energy_conservation (z : ℂ) (h : Complex.abs z = 1) : z.re ^ 2 + z.im ^ 2 = 1 := by
+  have := Complex.sq_abs z
+  rw [h] at this
+  simp [Complex.normSq_apply] at this
+  linarith
 
-/-- Balance hypothesis 3: Coherence closure for the observer.
-    
-    The observer's free choice satisfies a self-referential closure under C:
-    C(1 + 1/η) = η
-    
-    This defines the maximum observer freedom within the witness constraints.
--/
-hypothesis coherence_closure : ∀ η : ℝ, "C(1 + 1/η) = η for the Silver Ratio η"
+/-- **Constraint 2 (Directed balance)**: -Re(μ) = Im(μ). -/
+lemma directed_balance : -μ.re = μ.im := by
+  linarith [mu_re_is_neg_eta, mu_im_is_eta]
 
-/-- Balance hypothesis 4: Witness dissipation.
-    
-    The witness real part is strictly negative (dissipative):
-    Re(z) < 0
-    
-    This breaks the symmetry between witness and observer, ensuring the
-    interrogation is not reversible.
--/
-hypothesis witness_dissipation : ∀ z : ℂ, z.re < 0 → "Witness is in dissipative regime"
+/-- **Constraint 3 (Coherence closure)**: C(1 + 1/η) = η.
+    Proved in OilVinegar/UOV; stated here for completeness. -/
+lemma coherence_closure_η : C (1 + 1 / η) = η := by
+  have h2 : Real.sqrt 2 > 0 := Real.sqrt_pos.mpr (by norm_num)
+  have h2_sq : Real.sqrt 2 ^ 2 = 2 := Real.sq_sqrt (by norm_num)
+  unfold C η
+  have hsqrt_ne : Real.sqrt 2 ≠ 0 := ne_of_gt h2
+  field_simp
+  nlinarith [sq_nonneg (Real.sqrt 2), h2_sq]
 
-/-- Unified balance: All four constraints couple to enforce uniqueness.
--/
-theorem unified_balance (z : ℂ) :
-    (Complex.abs z = 1) ∧           -- energy conservation
-    (-z.re = z.im) ∧               -- directed balance
-    (z.re < 0) →                   -- witness dissipation
-    ∃! (w : ℂ), ∀ (h1 h2 h3 : Prop),
-      (h1 : Complex.abs w = 1) ∧
-      (h2 : -w.re = w.im) ∧
-      (h3 : w.re < 0) :=
-  sorry
+/-- **Constraint 4 (Witness dissipation)**: Re(μ) < 0. -/
+lemma witness_dissipation : μ.re < 0 := re_mu_negative
+
+-- ════════════════════════════════════════════════════════════════
+-- Uniqueness theorem
+-- ════════════════════════════════════════════════════════════════
+
+/-- **Theorem (Unified Balance / Uniqueness of Equilibrium)**.
+
+    μ is the *unique* complex number satisfying all three witness constraints:
+    unit circle, directed balance, and dissipation.
+
+    Proof:
+    - Existence: μ satisfies all three by mu_abs_one, directed_balance,
+      and re_mu_negative.
+    - Uniqueness: any z satisfying all three equals μ by reality_unique,
+      which reduces the system to a quadratic equation with a unique
+      negative solution. -/
+theorem unified_balance :
+    ∃! w : ℂ, Complex.abs w = 1 ∧ (-w.re = w.im) ∧ w.re < 0 := by
+  refine ⟨μ, ⟨mu_abs_one, directed_balance, re_mu_negative⟩, ?_⟩
+  intro w ⟨habs, hbal, hre⟩
+  -- w satisfies the three constraints; apply reality_unique
+  apply reality_unique w hre hbal
+  -- Still need: w.re² + w.im² = 1 from |w| = 1
+  exact energy_conservation w habs
 
 end BalanceHypothesis

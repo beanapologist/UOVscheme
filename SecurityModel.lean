@@ -41,22 +41,26 @@ lemma of_le {f g : ℕ → ℝ} (h : ∀ n, f n ≤ g n) (hg : Negligible g) : N
 lemma add {f g : ℕ → ℝ} (hf : Negligible f) (hg : Negligible g) :
     Negligible (fun n => f n + g n) := by
   intro c
+  -- Use c+1 for each bound; need n ≥ 2 so that 2·n⁻¹ ≤ 1
   obtain ⟨Nf, hf'⟩ := hf (c + 1)
   obtain ⟨Ng, hg'⟩ := hg (c + 1)
-  refine ⟨max Nf Ng + 1, fun n hn => ?_⟩
-  have hn1 : n ≥ Nf := le_trans (le_trans (Nat.le_add_right Nf Ng) (Nat.le_succ _)) hn
-  have hn2 : n ≥ Ng := le_trans (le_trans (Nat.le_add_left Ng Nf) (Nat.le_succ _)) hn
-  have hn_pos : (1 : ℝ) ≤ n := by exact_mod_cast Nat.one_le_iff_ne_zero.mpr (by omega)
+  refine ⟨max (max Nf Ng) 2, fun n hn => ?_⟩
+  have hn_Nf : n ≥ Nf := le_trans (le_trans (le_max_left _ _) (le_max_left _ _)) hn
+  have hn_Ng : n ≥ Ng := le_trans (le_trans (le_max_right _ _) (le_max_left _ _)) hn
+  have hn_2  : (2 : ℝ) ≤ (n : ℝ) := by exact_mod_cast le_trans (le_max_right _ _) hn
+  have hn_pos : (0 : ℝ) < (n : ℝ) := by linarith
+  -- n⁻¹ ≤ 1/2 because n ≥ 2
+  have hinv_half : (n : ℝ)⁻¹ ≤ 1 / 2 := by
+    rw [inv_le hn_pos (by norm_num)]; linarith
+  have hpc : 0 ≤ (n : ℝ)⁻¹ ^ c := by positivity
   calc f n + g n
-      ≤ (n : ℝ)⁻¹ ^ (c + 1) + (n : ℝ)⁻¹ ^ (c + 1) := add_le_add (hf' n hn1) (hg' n hn2)
-    _ = 2 * (n : ℝ)⁻¹ ^ (c + 1) := by ring
+      ≤ (n : ℝ)⁻¹ ^ (c + 1) + (n : ℝ)⁻¹ ^ (c + 1) :=
+          add_le_add (hf' n hn_Nf) (hg' n hn_Ng)
+    _ = 2 * ((n : ℝ)⁻¹ ^ c * (n : ℝ)⁻¹) := by rw [pow_succ]; ring
     _ ≤ (n : ℝ)⁻¹ ^ c := by
-        have hinv : (n : ℝ)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ hn_pos
-        have : (n : ℝ)⁻¹ ^ (c + 1) ≤ (n : ℝ)⁻¹ ^ c / 2 := by
-          rw [pow_succ]
-          have hnn : 0 ≤ (n : ℝ)⁻¹ ^ c := by positivity
-          nlinarith [mul_le_one₀ (pow_le_one₀ (by positivity) hinv) (by positivity) hinv]
-        linarith
+        -- 2 * (n⁻¹^c * n⁻¹) ≤ n⁻¹^c  iff  2 * n⁻¹ ≤ 1  iff  n ≥ 2
+        have h2n : 2 * (n : ℝ)⁻¹ ≤ 1 := by linarith
+        nlinarith [mul_nonneg hpc (inv_nonneg.mpr (le_of_lt hn_pos))]
 
 end Negligible
 

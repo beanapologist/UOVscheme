@@ -112,13 +112,8 @@ lemma coherence_one : C 1 = 1 := by
 -/
 lemma coherence_le_one (r : ℝ) (hr : 0 < r) : C r ≤ 1 := by
   unfold C
-  have h1 : 0 < 1 + r ^ 2 := by positivity
-  have key : 2 * r * (1 + r ^ 2) ≤ (1 + r ^ 2) ^ 2 := by nlinarith [sq_nonneg (r - 1)]
-  calc 2 * r / (1 + r ^ 2)
-    ≤ (1 + r ^ 2) ^ 2 / (1 + r ^ 2) := by exact div_le_div_of_le_left key h1 (by positivity)
-    _ = 1 + r ^ 2 := by field_simp
-    _ ≥ 1 := by nlinarith [sq_nonneg r]
-  sorry -- This requires more careful arithmetic
+  rw [div_le_one (by positivity)]
+  nlinarith [sq_nonneg (r - 1)]
 
 /-- C(r) = 1 if and only if r = 1 (for positive r).
 -/
@@ -140,9 +135,27 @@ lemma coherence_eq_one_iff (r : ℝ) (hr : 0 ≤ r) : C r = 1 ↔ r = 1 := by
 /-- A complex number satisfying all witness constraints is uniquely μ.
 -/
 lemma reality_unique (z : ℂ) (hre : z.re < 0) (hbal : -z.re = z.im) (hen : z.re ^ 2 + z.im ^ 2 = 1) : z = μ := by
-  -- From the constraints, z lies on the unit circle in the second quadrant
-  -- and satisfies -Re(z) = Im(z), which means the angle is 3π/4 or 135°
-  -- This uniquely determines z = e^(i·3π/4) = μ
-  sorry
+  -- Step 1: z.im = -z.re
+  have him : z.im = -z.re := hbal.symm
+  -- Step 2: substituting gives 2 * z.re² = 1, so z.re² = 1/2
+  have hrsq : z.re ^ 2 = 1 / 2 := by
+    rw [him] at hen; nlinarith [sq_nonneg z.re]
+  -- Step 3: η² = 1/2
+  have hηsq : η ^ 2 = 1 / 2 := by
+    unfold η
+    rw [div_pow, one_pow, Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
+  -- Step 4: z.re = ±η; dissipation (z.re < 0) with η > 0 forces z.re = -η
+  have hη_pos : 0 < η := by unfold η; positivity
+  have hre_eq : z.re = -η := by
+    have hprod : (z.re + η) * (z.re - η) = 0 := by
+      have : (z.re + η) * (z.re - η) = z.re ^ 2 - η ^ 2 := by ring
+      linarith
+    rcases mul_eq_zero.mp hprod with h | h
+    · linarith          -- z.re + η = 0, so z.re = -η ✓
+    · linarith          -- z.re - η = 0, so z.re = η > 0, contradicts hre
+  -- Step 5: assemble z = μ via Complex.ext
+  apply Complex.ext
+  · rw [mu_re_is_neg_eta, hre_eq]
+  · rw [mu_im_is_eta, him, hre_eq]; ring
 
 end OilVinegar
