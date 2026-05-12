@@ -3,13 +3,15 @@
 
 import random
 import sys
+
 sys.path.insert(0, __file__.rsplit("/", 2)[0])
 
 from uov import keygen
 
+
 def main():
     q, o, v = 31, 4, 8
-    print(f"UOV demo  q={q}  o={o}  v={v}  n={o+v}")
+    print(f"UOV demo  q={q}  o={o}  v={v}  n={o + v}")
     print()
 
     # --- Key generation ---
@@ -31,20 +33,22 @@ def main():
 
     # --- Wrong message rejection ---
     wrong_msg = [(x + 1) % q for x in msg]
-    print(f"Wrong message   : {'correctly rejected' if not key.verify(wrong_msg, sig) else 'BUG'}")
+    print(
+        f"Wrong message   : {'correctly rejected' if not key.verify(wrong_msg, sig) else 'BUG'}"
+    )
     assert not key.verify(wrong_msg, sig)
 
     # --- Eve tries 1000 random forgeries ---
     eve_rng = random.Random(999)
     n = o + v
     successes = sum(
-        key.verify(msg, [eve_rng.randrange(q) for _ in range(n)])
-        for _ in range(1000)
+        key.verify(msg, [eve_rng.randrange(q) for _ in range(n)]) for _ in range(1000)
     )
     print(f"Eve's forgeries : {successes}/1000 accepted  (expect 0)")
     assert successes == 0
     print()
     print("All checks passed.")
+
 
 if __name__ == "__main__":
     main()

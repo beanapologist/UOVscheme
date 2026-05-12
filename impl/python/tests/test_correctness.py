@@ -1,9 +1,9 @@
 """pytest suite — mirrors every Lean theorem in CentralMap.lean and SchemeCorrectness.lean."""
 
 import random
-import pytest
 import sys
 import os
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from uov import keygen
@@ -13,15 +13,18 @@ from uov.central_map import CentralMapComp, CentralMap
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
+
 def make_comp(q, o, v, seed):
     rng = random.Random(seed)
     return CentralMapComp.random(q, o, v, rng)
+
 
 def make_key(q, o, v, seed=0):
     return keygen(q, o, v, seed=seed)
 
 
 # ── eval_affine (CentralMapComp.eval_affine in Lean) ─────────────────────────
+
 
 class TestEvalAffine:
     """eval(oil, vin) == dot(oil, linCoeff(vin)) + vinConst(vin) for all inputs."""
@@ -37,7 +40,9 @@ class TestEvalAffine:
                         oil = [oil0, oil1]
                         vin = [vin0, vin1]
                         lhs = comp.eval(oil, vin)
-                        rhs = (dot(oil, comp.lin_coeff(vin), q) + comp.vin_const(vin)) % q
+                        rhs = (
+                            dot(oil, comp.lin_coeff(vin), q) + comp.vin_const(vin)
+                        ) % q
                         assert lhs == rhs, f"eval_affine failed at oil={oil} vin={vin}"
 
     def test_random_large(self):
@@ -59,7 +64,7 @@ class TestEvalAffine:
         rng = random.Random(2)
         for _ in range(20):
             vin = [rng.randrange(q) for _ in range(v)]
-            assert comp.eval([0]*o, vin) == comp.vin_const(vin)
+            assert comp.eval([0] * o, vin) == comp.vin_const(vin)
 
     def test_zero_vin(self):
         """At vin=0, eval equals dot(c, oil) + e."""
@@ -69,10 +74,11 @@ class TestEvalAffine:
         for _ in range(20):
             oil = [rng.randrange(q) for _ in range(o)]
             expected = (dot(comp.c, oil, q) + comp.e) % q
-            assert comp.eval(oil, [0]*v) == expected
+            assert comp.eval(oil, [0] * v) == expected
 
 
 # ── eval_as_linSystem (CentralMap.eval_as_linSystem in Lean) ─────────────────
+
 
 class TestEvalAsLinSystem:
     """F(oil, vin) == M(vin)·oil + b(vin) for the full central map."""
@@ -93,13 +99,14 @@ class TestEvalAsLinSystem:
 
 # ── Gaussian elimination ──────────────────────────────────────────────────────
 
+
 class TestGaussSolve:
     def test_identity(self):
         q = 17
         n = 4
-        I = [[1 if i == j else 0 for j in range(n)] for i in range(n)]
+        identity = [[1 if i == j else 0 for j in range(n)] for i in range(n)]
         b = [3, 1, 4, 1]
-        assert gauss_solve(I, b, q) == b
+        assert gauss_solve(identity, b, q) == b
 
     def test_random_systems(self):
         q = 31
@@ -127,6 +134,7 @@ class TestGaussSolve:
 
 
 # ── UOV correctness theorem ───────────────────────────────────────────────────
+
 
 class TestUOVCorrectness:
     """sign(sk, y) always passes verify(pk, y, ·)."""
@@ -166,8 +174,7 @@ class TestUOVCorrectness:
         msg = [rng.randrange(q) for _ in range(o)]
         n = o + v
         accepted = sum(
-            key.verify(msg, [rng.randrange(q) for _ in range(n)])
-            for _ in range(1000)
+            key.verify(msg, [rng.randrange(q) for _ in range(n)]) for _ in range(1000)
         )
         assert accepted == 0
 
@@ -212,6 +219,7 @@ class TestUOVCorrectness:
         y = key.F.eval(oil, vin)
 
         from uov.field import mat_mul_vec
+
         combined = oil + vin
         sigma = mat_mul_vec(key.T_inv, combined, q)
 

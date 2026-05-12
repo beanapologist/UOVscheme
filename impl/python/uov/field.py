@@ -25,7 +25,10 @@ def mat_add(A: List[List[int]], B: List[List[int]], q: int) -> List[List[int]]:
 
 def mat_mul(A: List[List[int]], B: List[List[int]], q: int) -> List[List[int]]:
     rows, mid, cols = len(A), len(B), len(B[0])
-    return [[sum(A[i][k] * B[k][j] for k in range(mid)) % q for j in range(cols)] for i in range(rows)]
+    return [
+        [sum(A[i][k] * B[k][j] for k in range(mid)) % q for j in range(cols)]
+        for i in range(rows)
+    ]
 
 
 def gauss_solve(M: List[List[int]], b: List[int], q: int) -> Optional[List[int]]:
@@ -65,7 +68,10 @@ def gf_matinv(M: List[List[int]], q: int) -> Optional[List[List[int]]]:
     """Invert an n×n matrix over GF(q). Returns None if singular."""
     n = len(M)
     # Augmented with identity
-    aug = [[M[i][j] for j in range(n)] + [1 if i == j else 0 for j in range(n)] for i in range(n)]
+    aug = [
+        [M[i][j] for j in range(n)] + [1 if i == j else 0 for j in range(n)]
+        for i in range(n)
+    ]
 
     for col in range(n):
         pivot = None

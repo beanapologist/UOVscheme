@@ -1,7 +1,7 @@
 """CentralMapComp and CentralMap — Python mirror of CentralMap.lean."""
 
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List
 from .field import dot, mat_mul_vec, random_matrix, random_vec
 
@@ -12,13 +12,14 @@ class CentralMapComp:
 
     The oil×oil block is absent by construction.
     """
+
     q: int
     o: int
     v: int
     A: List[List[int]]  # o×v
     B: List[List[int]]  # v×v
-    c: List[int]        # length o
-    d: List[int]        # length v
+    c: List[int]  # length o
+    d: List[int]  # length v
     e: int
 
     def eval(self, oil: List[int], vin: List[int]) -> int:
@@ -46,7 +47,9 @@ class CentralMapComp:
     @staticmethod
     def random(q: int, o: int, v: int, rng: random.Random) -> "CentralMapComp":
         return CentralMapComp(
-            q=q, o=o, v=v,
+            q=q,
+            o=o,
+            v=v,
             A=random_matrix(o, v, q, rng),
             B=random_matrix(v, v, q, rng),
             c=random_vec(o, q, rng),
@@ -58,6 +61,7 @@ class CentralMapComp:
 @dataclass
 class CentralMap:
     """The full UOV central map: o polynomial components over (o+v) variables."""
+
     q: int
     o: int
     v: int
@@ -78,6 +82,8 @@ class CentralMap:
     @staticmethod
     def random(q: int, o: int, v: int, rng: random.Random) -> "CentralMap":
         return CentralMap(
-            q=q, o=o, v=v,
+            q=q,
+            o=o,
+            v=v,
             comps=[CentralMapComp.random(q, o, v, rng) for _ in range(o)],
         )

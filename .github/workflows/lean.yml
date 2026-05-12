@@ -44,8 +44,13 @@ jobs:
           restore-keys: |
             lean-${{ runner.os }}-
 
-      - name: Fetch dependencies
-        run: lake exe cache get || lake update
+      # lake update must run first so that the Mathlib `cache` executable
+      # exists before we try to call `lake exe cache get`.
+      - name: Update dependencies
+        run: lake update
+
+      - name: Fetch Mathlib build cache
+        run: lake exe cache get || echo "Cache fetch failed — will build from source"
 
       - name: Build library
         run: lake build UOVscheme
@@ -55,15 +60,13 @@ jobs:
 
       - name: Check for sorry
         run: |
-          # Fail if any non-axiom sorry slips in (axioms are whitelisted below)
-          if grep -rn "sorry" UOVscheme/ --include="*.lean" \
+          # Match `sorry` used as a Lean tactic or term (not the word in prose).
+          # Patterns caught: "by sorry", ":= sorry", "  sorry" alone on a line.
+          # This avoids matching comments like "No sorry" or "sorry-free".
+          if grep -rEn "(^|[[:space:]]|:=)[[:space:]]*sorry[[:space:]]*($|--)" \
+               UOVscheme/ --include="*.lean" \
                | grep -v "^Binary file" \
-               | grep -v "MQ_hardness_assumption" \
-               | grep -v "uov_reduces_to_mq" \
-               | grep -v "PPT" \
-               | grep -v "MQ\.hard" \
-               | grep -v "UOV\.advantage" \
-               | grep -v "axiom\|#check\|--"; then
+               | grep -v "MQ_hardness_assumption\|uov_reduces_to_mq\|PPT\|MQ\.hard\|UOV\.advantage"; then
             echo "Unexpected sorry found — see above." >&2
             exit 1
           fi

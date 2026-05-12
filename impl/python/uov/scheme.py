@@ -4,7 +4,7 @@ import random
 from dataclasses import dataclass
 from typing import List, Optional
 from .central_map import CentralMap
-from .field import mat_mul_vec, gf_matinv, gauss_solve
+from .field import mat_mul_vec, gauss_solve
 
 
 @dataclass
@@ -14,21 +14,24 @@ class UOVKey:
     Secret key: (F, T, T_inv)
     Public key: P(σ) = F(T·σ) — composed map, oil subspace hidden.
     """
+
     q: int
     o: int
     v: int
     F: CentralMap
-    T: List[List[int]]      # (o+v)×(o+v), invertible
+    T: List[List[int]]  # (o+v)×(o+v), invertible
     T_inv: List[List[int]]  # precomputed inverse of T
 
     def public_eval(self, sigma: List[int]) -> List[int]:
         """P(σ) = F(oilPart(T·σ), vinPart(T·σ))."""
         x = mat_mul_vec(self.T, sigma, self.q)
-        oil = x[:self.o]
-        vin = x[self.o:]
+        oil = x[: self.o]
+        vin = x[self.o :]
         return self.F.eval(oil, vin)
 
-    def sign(self, y: List[int], rng: random.Random, max_attempts: int = 1000) -> Optional[List[int]]:
+    def sign(
+        self, y: List[int], rng: random.Random, max_attempts: int = 1000
+    ) -> Optional[List[int]]:
         """Sign message y ∈ GF(q)^o.
 
         Chooses random vinegar vin, forms the linear system M(vin)·oil = y − b(vin),

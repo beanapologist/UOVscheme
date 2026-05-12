@@ -5,12 +5,16 @@ pub type Mat = std::vec::Vec<std::vec::Vec<u64>>;
 
 // ── Scalar operations ─────────────────────────────────────────────────────────
 
-pub fn gf_add(a: u64, b: u64, q: u64) -> u64 { (a + b) % q }
-pub fn gf_mul(a: u64, b: u64, q: u64) -> u64 { (a * b) % q }
+pub fn gf_add(a: u64, b: u64, q: u64) -> u64 {
+    (a + b) % q
+}
+pub fn gf_mul(a: u64, b: u64, q: u64) -> u64 {
+    (a * b) % q
+}
 
 /// Modular inverse via extended Euclidean algorithm.
 pub fn gf_inv(a: u64, q: u64) -> u64 {
-    assert!(a % q != 0, "zero has no inverse in GF(q)");
+    assert!(!a.is_multiple_of(q), "zero has no inverse in GF(q)");
     let (mut old_r, mut r) = (a as i64, q as i64);
     let (mut old_s, mut s) = (1i64, 0i64);
     while r != 0 {
@@ -28,7 +32,9 @@ pub fn mod_sub(a: u64, b: u64, q: u64) -> u64 {
 // ── Vector operations ─────────────────────────────────────────────────────────
 
 pub fn dot(u: &[u64], v: &[u64], q: u64) -> u64 {
-    u.iter().zip(v.iter()).fold(0u64, |acc, (&a, &b)| (acc + a * b) % q)
+    u.iter()
+        .zip(v.iter())
+        .fold(0u64, |acc, (&a, &b)| (acc + a * b) % q)
 }
 
 pub fn vec_add(u: &[u64], v: &[u64], q: u64) -> Vec {
@@ -36,7 +42,10 @@ pub fn vec_add(u: &[u64], v: &[u64], q: u64) -> Vec {
 }
 
 pub fn vec_sub(u: &[u64], v: &[u64], q: u64) -> Vec {
-    u.iter().zip(v.iter()).map(|(&a, &b)| mod_sub(a, b, q)).collect()
+    u.iter()
+        .zip(v.iter())
+        .map(|(&a, &b)| mod_sub(a, b, q))
+        .collect()
 }
 
 // ── Matrix-vector product ─────────────────────────────────────────────────────
@@ -52,22 +61,30 @@ pub fn gauss_solve(m: &Mat, b: &[u64], q: u64) -> Option<Vec> {
     let n = b.len();
     // Augmented matrix [m | b]
     let mut aug: Mat = (0..n)
-        .map(|i| { let mut row = m[i].clone(); row.push(b[i]); row })
+        .map(|i| {
+            let mut row = m[i].clone();
+            row.push(b[i]);
+            row
+        })
         .collect();
 
     for col in 0..n {
-        let pivot = (col..n).find(|&row| aug[row][col] % q != 0)?;
+        let pivot = (col..n).find(|&row| !aug[row][col].is_multiple_of(q))?;
         aug.swap(col, pivot);
 
         let inv_p = gf_inv(aug[col][col], q);
-        for j in col..=n {
-            aug[col][j] = gf_mul(aug[col][j], inv_p, q);
+        for val in &mut aug[col][col..] {
+            *val = gf_mul(*val, inv_p, q);
         }
 
         for row in 0..n {
-            if row == col || aug[row][col] == 0 { continue; }
+            if row == col || aug[row][col] == 0 {
+                continue;
+            }
             let factor = aug[row][col];
-            for j in col..=n {
+            // Two rows accessed simultaneously — range loop is clearest here.
+            #[allow(clippy::needless_range_loop)]
+            for j in col..aug[col].len() {
                 let sub = gf_mul(factor, aug[col][j], q);
                 aug[row][j] = mod_sub(aug[row][j], sub, q);
             }
@@ -90,34 +107,48 @@ pub fn gf_matinv(m: &Mat, q: u64) -> Option<Mat> {
         .collect();
 
     for col in 0..n {
-        let pivot = (col..n).find(|&row| aug[row][col] % q != 0)?;
+        let pivot = (col..n).find(|&row| !aug[row][col].is_multiple_of(q))?;
         aug.swap(col, pivot);
 
         let inv_p = gf_inv(aug[col][col], q);
-        for j in 0..2*n {
-            aug[col][j] = gf_mul(aug[col][j], inv_p, q);
+        for val in &mut aug[col] {
+            *val = gf_mul(*val, inv_p, q);
         }
 
         for row in 0..n {
-            if row == col || aug[row][col] == 0 { continue; }
+            if row == col || aug[row][col] == 0 {
+                continue;
+            }
             let factor = aug[row][col];
-            for j in 0..2*n {
+            // Two rows accessed simultaneously — range loop is clearest here.
+            #[allow(clippy::needless_range_loop)]
+            for j in 0..aug[col].len() {
                 let sub = gf_mul(factor, aug[col][j], q);
                 aug[row][j] = mod_sub(aug[row][j], sub, q);
             }
         }
     }
 
-    Some((0..n).map(|i| (0..n).map(|j| aug[i][n + j]).collect()).collect())
+    Some(
+        (0..n)
+            .map(|i| (0..n).map(|j| aug[i][n + j]).collect())
+            .collect(),
+    )
 }
 
 // ── Random helpers ────────────────────────────────────────────────────────────
 
 /// Simple seeded LCG for deterministic random numbers (no external deps).
-pub struct Rng { state: u64 }
+pub struct Rng {
+    state: u64,
+}
 
 impl Rng {
-    pub fn new(seed: u64) -> Self { Self { state: seed ^ 0x12345678ABCD } }
+    pub fn new(seed: u64) -> Self {
+        Self {
+            state: seed ^ 0x12345678ABCD,
+        }
+    }
 
     pub fn next_u64(&mut self) -> u64 {
         // Splitmix64
@@ -128,7 +159,9 @@ impl Rng {
         z ^ (z >> 31)
     }
 
-    pub fn next_field(&mut self, q: u64) -> u64 { self.next_u64() % q }
+    pub fn next_field(&mut self, q: u64) -> u64 {
+        self.next_u64() % q
+    }
 
     pub fn random_vec(&mut self, n: usize, q: u64) -> Vec {
         (0..n).map(|_| self.next_field(q)).collect()
@@ -141,7 +174,9 @@ impl Rng {
     pub fn random_invertible(&mut self, n: usize, q: u64) -> Mat {
         loop {
             let m = self.random_mat(n, n, q);
-            if gf_matinv(&m, q).is_some() { return m; }
+            if gf_matinv(&m, q).is_some() {
+                return m;
+            }
         }
     }
 }
