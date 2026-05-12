@@ -13,11 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Lean
+      # Installs Lean, fetches caches, builds, and checks code.
+      - name: Build Lean Project
         uses: leanprover/lean-action@v1
-
-      - name: Build with Lake
-        run: lake build
-
-      - name: Check Lean files
-        run: lake check || lean --version
