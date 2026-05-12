@@ -1,0 +1,138 @@
+name: C++
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'impl/cpp/**'
+      - '.github/workflows/cpp.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'impl/cpp/**'
+      - '.github/workflows/cpp.yml'
+
+jobs:
+  build-and-test:
+    name: CMake / ${{ matrix.compiler }} / ${{ matrix.build_type }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        build_type: [Debug, Release]
+
+    env:
+      CC:  ${{ matrix.compiler == 'gcc' && 'gcc'   || 'clang'   }}
+      CXX: ${{ matrix.compiler == 'gcc' && 'g++'   || 'clang++' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y cmake ninja-build ${{ matrix.compiler == 'clang' && 'clang' || 'g++' }}
+
+      # CMake configure + build results are cached on the source tree hash.
+      - name: Cache build directory
+        uses: actions/cache@v4
+        with:
+          path: impl/cpp/build
+          key: cpp-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ hashFiles('impl/cpp/**') }}
+          restore-keys: |
+            cpp-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-
+
+      - name: Configure
+        working-directory: impl/cpp
+        run: |
+          cmake -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_C_COMPILER=$CC \
+            -DCMAKE_CXX_COMPILER=$CXX
+
+      - name: Build
+        working-directory: impl/cpp
+        run: cmake --build build --parallel
+
+      - name: Run tests (ctest)
+        working-directory: impl/cpp/build
+        run: ctest --output-on-failure --parallel $(nproc)
+
+      - name: Run demo (smoke test)
+        working-directory: impl/cpp/build
+        run: ./uov_demo
+
+  sanitizers:
+    name: AddressSanitizer + UBSan
+    runs-on: ubuntu-latest
+    # Only run on push to main to keep PR checks fast
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang
+        run: sudo apt-get install -y clang ninja-build
+
+      - name: Configure with sanitizers
+        working-directory: impl/cpp
+        run: |
+          cmake -B build-san \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+
+      - name: Build
+        working-directory: impl/cpp
+        run: cmake --build build-san --parallel
+
+      - name: Run tests under ASAN/UBSAN
+        working-directory: impl/cpp/build-san
+        env:
+          ASAN_OPTIONS: halt_on_error=1:detect_leaks=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --output-on-failure
+
+  clang-tidy:
+    name: clang-tidy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-tidy
+        run: sudo apt-get install -y clang clang-tidy ninja-build
+
+      - name: Configure (generate compile_commands.json)
+        working-directory: impl/cpp
+        run: |
+          cmake -B build-tidy \
+            -G Ninja \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Run clang-tidy
+        working-directory: impl/cpp
+        run: |
+          # Excluded checks:
+          #   readability-identifier-length          — q/o/v/x are standard UOV/crypto notation
+          #   readability-magic-numbers              — seeds and loop counts in test code are fine
+          #   readability-braces-around-statements   — single-line for bodies are intentional
+          #   readability-isolate-declaration        — "const int q=31, o=4, v=8" is idiomatic here
+          #   readability-function-cognitive-complexity — test runner main() is sequentially complex
+          clang-tidy \
+            -p build-tidy \
+            --warnings-as-errors='*' \
+            --checks='-*,readability-*,performance-*,modernize-*,\
+              -modernize-use-trailing-return-type,\
+              -readability-identifier-length,\
+              -readability-magic-numbers,\
+              -readability-braces-around-statements,\
+              -readability-isolate-declaration,\
+              -readability-function-cognitive-complexity' \
+            src/demo.cpp \
+            tests/test_correctness.cpp
