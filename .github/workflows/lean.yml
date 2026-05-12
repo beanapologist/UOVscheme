@@ -19,6 +19,26 @@ on:
       - '.github/workflows/lean.yml'
 
 jobs:
+  # Fast check that requires no Lean installation — always runs.
+  sorry-check:
+    name: No sorry check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for sorry
+        run: |
+          # Match `sorry` used as a Lean tactic or term (not the word in prose).
+          if grep -rEn "(^|[[:space:]]|:=)[[:space:]]*sorry[[:space:]]*($|--)" \
+               UOVscheme/ --include="*.lean" \
+               | grep -v "^Binary file" \
+               | grep -v "MQ_hardness_assumption\|uov_reduces_to_mq\|PPT\|MQ\.hard\|UOV\.advantage"; then
+            echo "Unexpected sorry found — see above." >&2
+            exit 1
+          fi
+          echo "No unexpected sorry found."
+
+  # Full Lake build — downloads Lean 4.10.0 directly (bypasses elan CDN).
   build:
     name: Lake build
     runs-on: ubuntu-latest
@@ -26,33 +46,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install elan
-        run: |
-          set -euo pipefail
-          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
-            | sh -s -- --default-toolchain none -y
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-
-      - name: Cache Lake packages
+      - name: Cache Lean + Lake artifacts
         uses: actions/cache@v4
         with:
           path: |
-            ~/.elan
+            /opt/lean4
             .lake/packages
             .lake/build
           key: lean-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lakefile.lean') }}
           restore-keys: |
             lean-${{ runner.os }}-
 
-      - name: Install Lean toolchain
+      - name: Install Lean 4.10.0
         run: |
           set -euo pipefail
-          TOOLCHAIN=$(cat lean-toolchain)
-          echo "Installing toolchain: $TOOLCHAIN"
-          elan toolchain install "$TOOLCHAIN"
-          elan override set "$TOOLCHAIN"
-          lean --version
-          lake --version
+          if [ -x /opt/lean4/bin/lean ]; then
+            echo "Lean already cached."
+          else
+            echo "Downloading Lean 4.10.0..."
+            curl -fSL \
+              https://github.com/leanprover/lean4/releases/download/v4.10.0/lean-4.10.0-linux.tar.zst \
+              -o /tmp/lean.tar.zst
+            sudo mkdir -p /opt/lean4
+            sudo chown "$USER" /opt/lean4
+            cd /opt/lean4
+            zstd -d /tmp/lean.tar.zst --stdout | tar -x --strip-components=1
+            rm /tmp/lean.tar.zst
+          fi
+          echo "/opt/lean4/bin" >> "$GITHUB_PATH"
+          /opt/lean4/bin/lean --version
+          /opt/lean4/bin/lake --version
 
       - name: Update dependencies
         run: lake update
@@ -65,14 +88,3 @@ jobs:
 
       - name: Build tests
         run: lake build Test
-
-      - name: Check for sorry
-        run: |
-          if grep -rEn "(^|[[:space:]]|:=)[[:space:]]*sorry[[:space:]]*($|--)" \
-               UOVscheme/ --include="*.lean" \
-               | grep -v "^Binary file" \
-               | grep -v "MQ_hardness_assumption\|uov_reduces_to_mq\|PPT\|MQ\.hard\|UOV\.advantage"; then
-            echo "Unexpected sorry found — see above." >&2
-            exit 1
-          fi
-          echo "No unexpected sorry found."
