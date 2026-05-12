@@ -1,5 +1,11 @@
 # UOVscheme: Formal Verification of Oil-and-Vinegar
 
+[![Lean](https://github.com/beanapologist/UOVscheme/actions/workflows/lean.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/lean.yml)
+[![Python](https://github.com/beanapologist/UOVscheme/actions/workflows/python.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/python.yml)
+[![C++](https://github.com/beanapologist/UOVscheme/actions/workflows/cpp.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/cpp.yml)
+[![Rust](https://github.com/beanapologist/UOVscheme/actions/workflows/rust.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/rust.yml)
+[![Release](https://github.com/beanapologist/UOVscheme/actions/workflows/release.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/release.yml)
+
 A Lean 4 project with two layers:
 
 1. **Duality formalization** — the original witness/observer lens on OV, proving properties of the coherence function `C`, the silver ratio `η`, and the equilibrium point `μ = e^(i·3π/4)`.
@@ -175,6 +181,29 @@ lake build
 ```
 
 Requires Lean 4 and Lake. Mathlib is fetched automatically.
+
+---
+
+## CI/CD
+
+Each component has its own GitHub Actions pipeline triggered by path filters so unrelated changes don't run unnecessary jobs.
+
+| Workflow | Triggers on | What it checks |
+|---|---|---|
+| **Lean** | `UOVscheme/**`, `lakefile.lean` | `lake build`, `sorry` scan |
+| **Python** | `impl/python/**` | pytest × {3.9, 3.11, 3.12}, ruff lint + format, coverage ≥ 90% |
+| **C++** | `impl/cpp/**` | cmake/ninja × {gcc, clang} × {Debug, Release}, ASAN+UBSAN, clang-tidy |
+| **Rust** | `impl/rust/**` | cargo test × {stable, beta}, rustfmt, clippy -D warnings, Miri |
+| **Release** | `v*` tag push | Packages Python wheel, C++ header zip, Rust `.crate` → GitHub Release |
+
+### Creating a release
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+The release workflow builds all three language artifacts, creates a GitHub Release with auto-generated notes, and attaches the packages as assets. Pre-release tags (e.g. `v0.2.0-rc1`) are automatically marked as pre-release.
 
 ---
 

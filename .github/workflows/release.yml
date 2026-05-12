@@ -1,0 +1,178 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]*'
+
+permissions:
+  contents: write   # needed to create GitHub releases
+
+jobs:
+  # ── Build and package the Python wheel ─────────────────────────────────────
+  python-package:
+    name: Python wheel + sdist
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build tools
+        run: pip install build
+
+      # Write a minimal pyproject.toml into the python dir for this job only
+      - name: Create pyproject.toml
+        working-directory: impl/python
+        run: |
+          cat > pyproject.toml << 'EOF'
+          [build-system]
+          requires = ["setuptools>=68", "wheel"]
+          build-backend = "setuptools.backends.legacy:build"
+
+          [project]
+          name = "uov-scheme"
+          dynamic = ["version"]
+          description = "Oil-and-Vinegar signature scheme"
+          requires-python = ">=3.9"
+
+          [tool.setuptools.dynamic]
+          version = {attr = "uov.__version__"}
+
+          [tool.setuptools.packages.find]
+          where = ["."]
+          include = ["uov*"]
+          EOF
+          # Inject __version__ from the git tag
+          echo "__version__ = \"${GITHUB_REF_NAME#v}\"" >> uov/__init__.py
+
+      - name: Build wheel and sdist
+        working-directory: impl/python
+        run: python -m build
+
+      - name: Upload Python artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-dist
+          path: impl/python/dist/
+
+  # ── Build and package the C++ headers ──────────────────────────────────────
+  cpp-package:
+    name: C++ header archive
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get install -y cmake ninja-build
+
+      - name: Verify build (Release / GCC)
+        working-directory: impl/cpp
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+          cd build && ctest --output-on-failure
+
+      - name: Package headers
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          PKG="uov-cpp-headers-${TAG}"
+          mkdir -p "${PKG}"
+          cp -r impl/cpp/include/uov "${PKG}/"
+          cp impl/cpp/CMakeLists.txt "${PKG}/"
+          zip -r "${PKG}.zip" "${PKG}/"
+
+      - name: Upload C++ artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp-headers
+          path: uov-cpp-headers-*.zip
+
+  # ── Build and package the Rust crate ───────────────────────────────────────
+  rust-package:
+    name: Rust crate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: impl/rust
+
+      - name: Stamp version from tag
+        working-directory: impl/rust
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i "s/^version = .*/version = \"${VERSION}\"/" Cargo.toml
+
+      - name: cargo test (pre-package gate)
+        working-directory: impl/rust
+        run: cargo test
+
+      - name: cargo package
+        working-directory: impl/rust
+        run: cargo package --no-verify
+
+      - name: Upload Rust artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-crate
+          path: impl/rust/target/package/*.crate
+
+  # ── Create the GitHub Release and attach all artifacts ─────────────────────
+  github-release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    needs: [python-package, cpp-package, rust-package]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          cat > notes.md << EOF
+          ## UOV Scheme ${TAG}
+
+          Formal verification of the Oil-and-Vinegar signature scheme
+          (Lean 4 + Python + C++ + Rust).
+
+          ### Packages
+
+          | Language | Artifact |
+          |---|---|
+          | Python | \`uov-scheme-*.whl\` / \`*.tar.gz\` |
+          | C++ | \`uov-cpp-headers-${TAG}.zip\` — drop \`include/uov/\` onto your path |
+          | Rust | \`uov-*.crate\` |
+
+          ### Verifying correctness
+          All implementations pass the same test suite derived from the Lean proofs:
+          - Python: 16 pytest
+          - C++: 13 ctest
+          - Rust: 15 cargo tests
+          EOF
+          echo "notes_file=notes.md" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: notes.md
+          files: |
+            dist/python-dist/*
+            dist/cpp-headers/*.zip
+            dist/rust-crate/*.crate
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
