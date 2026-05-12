@@ -14,5 +14,8 @@ lean_lib UOVscheme where
     .subModules `BalanceHypothesis,
     .subModules `UOV,
     .subModules `CentralMap,
-    .subModules `SchemeCorrectness
+    .subModules `SchemeCorrectness,
+    .subModules `SecurityModel,
+    .subModules `MQProblem,
+    .subModules `UOVSecurity
   ]
