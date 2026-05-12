@@ -1,49 +1,52 @@
 /-
   DualityStructure.lean — Witness/Observer duality framework.
-  
+
   This module defines the abstract duality structure that underlies
-  the Oil-and-Vinegar cryptosystem, with witness (oil) and observer (vinegar) roles.
+  the Oil-and-Vinegar cryptosystem.
+
+  The correspondence is:
+    Vinegar variables  ↔  Observer's free choice  (Im side)
+    Oil variables      ↔  Witness's forced response (Re side)
+    Central map F      ↔  Interrogation / coherence bridge
+    Signature σ        ↔  Equilibrium point μ
+
+  The propositions below are informal descriptions of this duality.
+  The concrete mathematical content lives in OilVinegar.lean,
+  BalanceHypothesis.lean, and CentralMap.lean.
 -/
 
 open Complex
 
 noncomputable section DualityStructure
 
-/-- The Witness/Observer interrogation structure.
-    
-    An interrogation consists of:
-    - vinegar_space: observer's freely chosen parameters (imaginary side)
-    - oil_space: witness's forced responses (real side)
-    - interrogation: the bridge connecting them
--/
+/-- A witness/observer pair: the vinegar space V (observer, freely chosen)
+    and the oil space O (witness, uniquely forced). -/
 structure InterrogationStructure (V O : Type*) where
   vinegar_space : V
   oil_space : O
 
-/-- The duality principle: Witness is forced by Observer.
-    
-    Formally: given observer's free choice (vinegar_space),
-    there exists a unique witness response (oil_space).
--/
-theorem witness_forced_by_observer {V O : Type*} (s : InterrogationStructure V O) :
-    "Given vinegar (observer), oil (witness) is uniquely determined" := sorry
+/-
+  Informal duality principles (not formal Lean propositions):
 
-/-- The coherence bridging principle: Coherence C mediates the coupling.
--/
-theorem coherence_mediates_duality (r : ℝ) :
-    "The coherence function C(r) bridges witness magnitude and observer measurement" := sorry
+  witness_forced_by_observer:
+    Given the observer's vinegar choice, fixing those variables turns the
+    central map into a linear system whose solution is the oil vector.
+    Proved concretely as CentralMap.eval_as_linSystem.
 
-/-- Complex duality: Real ↔ Imaginary coupling.
-    
-    The witness lives on the real part (forced), while the observer
-    chooses the imaginary part (free). Their interaction produces a unique equilibrium on the unit circle.
--/
-theorem complex_duality_principle :
-    "z = Re(z) + i·Im(z) where Re is witness-constrained and Im is observer-free" := sorry
+  coherence_mediates_duality:
+    The coherence function C(r) = 2r/(1+r²) is the bridge between
+    multiplicative magnitude (Re side) and additive argument (Im side).
+    Proved: coherence_le_one, coherence_eq_one_iff, trapdoor_bijection_forward_side.
 
-/-- The unit circle equilibrium: All constraints meet at |z| = 1.
+  complex_duality_principle:
+    μ = e^(i·3π/4) decomposes as Re(μ) = −η (witness, negative/dissipative)
+    and Im(μ) = η (observer, positive/free).
+    Proved: mu_re_is_neg_eta, mu_im_is_eta, reality_unique.
+
+  equilibrium_on_unit_circle:
+    |μ| = 1 is the energy-conservation constraint that, combined with
+    directed balance and dissipation, uniquely determines μ.
+    Proved: unified_balance (BalanceHypothesis.lean).
 -/
-theorem equilibrium_on_unit_circle (z : ℂ) (h : Complex.abs z = 1) :
-    "z is an equilibrium point under the duality coupling" := sorry
 
 end DualityStructure

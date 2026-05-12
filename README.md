@@ -1,211 +1,141 @@
-# UOVscheme: Formal Verification of Oil-and-Vinegar Duality
+# UOVscheme: Formal Verification of Oil-and-Vinegar
 
-A Lean 4 formalization of the Oil-and-Vinegar (OV) cryptosystem through the lens of **witness/observer duality**. This project rigorously proves the mathematical structure underlying OV signatures, connecting concrete cryptographic properties to abstract interrogation theory.
+A Lean 4 project with two layers:
 
-## 🎯 Overview
-
-The Oil-and-Vinegar cryptosystem is reconceived as an **interrogation structure** where:
-
-- **Vinegar** = Observer's free choice (imaginary side, subjective)
-- **Oil** = Witness's forced response (real side, objective)
-- **Trapdoor** = Coherence operator C, the bridge between them
-- **Public Map** = Complete interrogation protocol (S ∘ F ∘ T)
-- **Signature** = Equilibrium point μ where all constraints close
-
-The unique equilibrium is **μ = e^(i·3π/4)**, which satisfies:
-- Energy conservation: |μ| = 1
-- Directed balance: -Re(μ) = Im(μ)
-- Dissipation: Re(μ) = -1/√2 < 0
-- Period-8 cycle: μ⁸ = 1
-
-## 📁 Project Structure
-
-```
-UOVscheme/
-├── OilVinegar.lean              # Core definitions and fundamental lemmas
-├── DualityStructure.lean        # Witness/observer duality framework
-├── BalanceHypothesis.lean       # Balance constraints and hypotheses
-├── UOV.lean                     # Main theorems connecting OV to duality
-├── lakefile.lean                # Lake build configuration
-├── .github/workflows/           # CI/CD pipeline
-│   └── build.yml
-└── README.md                    # This file
-```
-
-## 🔧 Module Descriptions
-
-### OilVinegar.lean
-**Core cryptographic definitions**
-
-Defines the fundamental objects:
-- `C : ℝ → ℝ` — The coherence trapdoor function: C(r) = 2r/(1+r²)
-- `η : ℝ` — The Silver Ratio: η = 1/√2
-- `μ : ℂ` — The equilibrium point: μ = e^(i·3π/4)
-
-Key lemmas:
-- `mu_energy_conserved` — Re(μ)² + Im(μ)² = 1
-- `mu_pow_eight` — μ⁸ = 1
-- `coherence_le_one` — C(r) ≤ 1 for all r ≥ 0
-- `coherence_eq_one_iff` — C(r) = 1 ↔ r = 1
-
-### DualityStructure.lean
-**Abstract duality framework**
-
-Establishes the conceptual architecture:
-- `InterrogationStructure` — Type for witness/observer pairs
-- `witness_forced_by_observer` — Given observer's choice, witness is unique
-- `coherence_mediates_duality` — C bridges the coupling
-- `complex_duality_principle` — Real/imaginary separation of roles
-- `equilibrium_on_unit_circle` — Solutions lie on |z| = 1
-
-### BalanceHypothesis.lean
-**Fundamental balance equations**
-
-Constrains the system:
-- `energy_conservation` — |z| = 1
-- `directed_balance` — -Re(z) = Im(z)
-- `coherence_closure` — C(1 + 1/η) = η
-- `witness_dissipation` — Re(z) < 0
-- `unified_balance` — All four constraints force uniqueness
-
-### UOV.lean
-**Main theorem collection**
-
-Organized into five parts:
-
-1. **Vinegar (Observer)**
-   - `vinegar_observer_freedom` — Observer freely chooses frame
-   - `vinegar_V1_energy_conservation` — First constraint
-   - `vinegar_V2_directed_balance` — Second constraint
-   - `vinegar_V3_self_referential_closure` — Third constraint
-   - `vinegar_triple_consistent` — All three hold
-
-2. **Oil (Witness)**
-   - `oil_witness_forced_by_vinegar` — Witness uniquely determined
-   - `oil_witness_bounded` — |μ| = 1
-   - `oil_witness_dissipative` — Re(μ) < 0
-   - `oil_witness_period` — μ⁸ = 1
-   - `oil_determined_by_vinegar` — All properties forced
-
-3. **Trapdoor (Coherence C)**
-   - `trapdoor_unique_in_family` — C is the unique degree-(1,2) rational with peak at r=1
-   - `trapdoor_bijection_forward_side` — Bijection proof: C(r) = C(s) ⇒ r = s ∨ r = 1/s
-   - `trapdoor_reveals_alignment` —C reaches maximum at r = 1
-   - `trapdoor_hardness_requires_observer_frame` — Inverting C needs observer constraint
-
-4. **Public Map (Interrogation)**
-   - `public_map_embedding_T` — Embedding vinegar into complex plane
-   - `public_map_interrogation_F` — Interrogation applies C
-   - `public_map_composition` — Full protocol: P = S ∘ F ∘ T
-   - `public_map_is_interrogation` — P is deterministic interrogation
-
-5. **Signature (Equilibrium)**
-   - `signature_uniqueness` — μ is the unique valid signature
-   - `signature_perfect_alignment` — C(|μ|) = 1
-   - `signature_complete_interrogation` — Interrogation terminates at μ
-   - `signature_equilibrium_point` — μ is the unique closure point
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- **Lean 4** (version 4.10.0 or compatible)
-- **Lake** (Lean's package manager)
-- **git**
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/B2Beans/UOVscheme.git
-cd UOVscheme
-
-# Build the project
-lake build
-
-# Run checks
-lake check
-```
-
-### Using with VS Code
-
-1. Install the [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4)
-2. Open the project folder in VS Code
-3. The extension will automatically download the correct Lean toolchain
-
-## ✨ Key Mathematical Insights
-
-### The Coherence Function
-The trapdoor operator C(r) = 2r/(1+r²) is the bridge in the duality:
-- Maps (0,1] → (0,1] with involution symmetry: C(r) = C(1/r)
-- Reaches maximum at r = 1: C(1) = 1
-- Establishes bijection except for the r ↔ 1/r symmetry
-
-### The Silver Ratio Connection
-The value η = 1/√2 appears in the coherence closure property:
-- C(1 + √2) = 1/√2  (special case)
-- Links the observer's free choice to a periodic solution
-- Connects to the period-8 cycle of μ
-
-### The Unique Equilibrium
-The complex number μ = e^(i·3π/4) is uniquely determined by:
-1. Unit circle constraint: |μ| = 1
-2. Directed balance: -Re(μ) = Im(μ)
-3. Dissipation: Re(μ) < 0
-
-This forces:
-- Re(μ) = -1/√2 (witness dissipative)
-- Im(μ) = 1/√2 (observer's free response)
-- Angle: 3π/4 radians (135°, second quadrant)
-
-## 🔍 Notable Proofs
-
-### trapdoor_bijection_forward_side
-Proves that C is essentially a bijection with one symmetry:
-```lean
-If C(r) = C(s) then r = s ∨ r·s = 1
-```
-
-**Proof strategy:**
-1. Unfold C: C(r) = 2r/(1+r²)
-2. Cross-multiply: 2r(1+s²) = 2s(1+r²)
-3. Factor: 2(r-s)(1-rs) = 0
-4. Case analysis on roots
-
-### signature_perfect_alignment
-Shows the signature achieves maximum coherence:
-```lean
-C(|μ|) = 1 because |μ| = 1
-```
-
-## 📊 Build Status
-
-The project includes a **GitHub Actions CI/CD pipeline** that:
-- Triggers on push to `main` and pull requests
-- Installs Lean 4 and Lake
-- Runs `lake build` to verify all proofs compile
-- Status badge: [![Build](https://github.com/B2Beans/UOVscheme/actions/workflows/build.yml/badge.svg)](https://github.com/B2Beans/UOVscheme/actions)
-
-## 🤝 Contributing
-
-Contributions are welcome! Areas for enhancement:
-- Completing `sorry` statements with full proofs
-- Adding optimized tactic proofs in alternative style
-- Documenting additional cryptographic properties
-- Performance benchmarking of verification
-
-## 📖 References
-
-- **Oil-and-Vinegar Signatures**: [Matsumoto & Imai, 1988](https://en.wikipedia.org/wiki/Oil_and_Vinegar)
-- **Witness/Observer Duality**: Original formalization in this project
-- **Lean 4 Documentation**: https://lean-lang.org/
-- **Mathlib**: https://github.com/leanprover-community/mathlib4
-
-## 📄 License
-
-This project is licensed under the [Creative Commons](LICENSE).
+1. **Duality formalization** — the original witness/observer lens on OV, proving properties of the coherence function `C`, the silver ratio `η`, and the equilibrium point `μ = e^(i·3π/4)`.
+2. **Actual cryptographic formalization** — the UOV signature scheme over a finite field `ZMod q`, with a proved correctness theorem and a stated (but necessarily axiomatized) EUF-CMA security theorem.
 
 ---
 
-**Maintainer**: [B2Beans](https://github.com/B2Beans)  
-**Last Updated**: May 2026
+## Alice, Bob, and Eve
+
+**Key generation** (Alice runs this once):
+
+Alice picks a random central map `F` (a set of `o` quadratic polynomials with no oil×oil terms) and a random invertible linear map `T`. She keeps both secret and publishes the composed map `P = F ∘ T` as her public key — `o` quadratic equations in `o+v` unknowns over `𝔽_q`.
+
+**Signing** (Alice signs a message for Bob):
+
+Alice wants to sign message `m` whose hash is `y = H(m) ∈ 𝔽_q^o`.
+
+1. She picks random **vinegar** values `vin ∈ 𝔽_q^v` (her free choice — the observer's frame).
+2. Substituting `vin` into `F` turns it affine-linear in the **oil** variables: `M(vin) · oil = y − b(vin)`.
+3. She solves this linear system for `oil` (fast — it's Gaussian elimination, not quadratic).
+4. She returns `σ = T⁻¹(oil ‖ vin)` as the signature.
+
+Alice can sign efficiently because she knows the oil-vinegar structure. Without it, step 3 is a system of quadratic equations — the MQ problem.
+
+**Verification** (Bob checks the signature):
+
+Bob computes `P(σ)` using the public key and checks whether `P(σ) = H(m)`. One evaluation of `o` quadratic polynomials. Accept if equal, reject otherwise.
+
+**Forgery attempt** (Eve tries to break the scheme):
+
+Eve has `P` and a target `y = H(m)`. To forge she must find `σ` with `P(σ) = y` — exactly the MQ inversion problem on a random-looking system of `o` quadratic equations in `o+v` unknowns over `𝔽_q`. No efficient algorithm is known; the best attacks are exponential in `v` for typical parameters (e.g. `q=2, v=64`).
+
+---
+
+## The OV Trapdoor Matrix
+
+The scheme has a natural Re/Im duality. Each column is a consistent world; the central map is the bridge between them.
+
+| Oil-and-Vinegar (crypto) | bridge | Witness/Observer (duality) |
+|---|:---:|---|
+| Vinegar `vin ∈ 𝔽_q^v` | free choice | Observer's frame (Im side) |
+| Oil `oil ∈ 𝔽_q^o` | forced response | Witness's reply (Re side) |
+| Central map `F(oil, vin)` | evaluation | Coherence `C(r) = 2r/(1+r²)` |
+| Fix vinegar → linear in oil | pins observer, forces witness | `M(vin) · oil = y − b(vin)` |
+| Secret transform `T` | hides the split | Trapdoor |
+| Public map `P = F ∘ T` | full interrogation | `μ` constraints close |
+| Signature `σ : P(σ) = y` | equilibrium | `μ = e^(i·3π/4)` : all rows fire |
+| Forging = inverting `P` | hard without split | MQ hardness assumption |
+
+**Why Alice can sign but Eve cannot forge:**
+Alice knows which variables are oil and which are vinegar (the Re/Im split). This turns `P(σ) = y` from a quadratic problem into a linear one. Eve only sees `P`, which looks like a random quadratic map — she has no way to recover the split without solving MQ.
+
+---
+
+## Project Structure
+
+```
+UOVscheme/
+├── OilVinegar.lean          # C, η, μ and their properties (all proved)
+├── DualityStructure.lean    # Abstract witness/observer framework
+├── BalanceHypothesis.lean   # Four constraints + uniqueness theorem
+├── UOV.lean                 # Duality lens applied to OV
+├── CentralMap.lean          # Actual UOV map over ZMod q; linearization
+├── SchemeCorrectness.lean   # UOVKey, Sign, Verify, correctness theorem
+├── SecurityModel.lean       # Negligible, PPT (axiomatized)
+├── MQProblem.lean           # MQ adversary, MQ.hard axiom
+└── UOVSecurity.lean         # EUF-CMA theorem (proved from two axioms)
+```
+
+---
+
+## What Is Proved
+
+### Duality layer (OilVinegar.lean, BalanceHypothesis.lean)
+
+| Theorem | Statement |
+|---|---|
+| `mu_re_is_neg_eta` | `μ.re = −η` |
+| `mu_im_is_eta` | `μ.im = η` |
+| `mu_abs_one` | `|μ| = 1` |
+| `mu_pow_eight` | `μ⁸ = 1` |
+| `mu_energy_conserved` | `μ.re² + μ.im² = 1` |
+| `coherence_le_one` | `C r ≤ 1` for `r > 0` |
+| `coherence_eq_one_iff` | `C r = 1 ↔ r = 1` |
+| `trapdoor_bijection_forward_side` | `C r = C s → r = s ∨ rs = 1` |
+| `vinegar_V3_self_referential_closure` | `C(1 + 1/η) = η` |
+| `reality_unique` | The three constraints uniquely determine `μ` |
+| `unified_balance` | `∃! w : ℂ, |w| = 1 ∧ −w.re = w.im ∧ w.re < 0` |
+
+### Cryptographic layer (CentralMap.lean, SchemeCorrectness.lean)
+
+| Theorem | Statement |
+|---|---|
+| `CentralMapComp.eval_affine` | `F_k(oil, vin) = ⟨oil, linCoeff(vin)⟩ + vinConst(vin)` |
+| `CentralMap.eval_as_linSystem` | `F(oil, vin) = M(vin) ·ᵥ oil + b(vin)` |
+| `UOVKey.correctness` | Sign always produces a valid signature |
+| `forgery_iff_mq_preimage` | A valid forgery iff `publicEval σ = y` |
+
+### Security layer (SecurityModel.lean, UOVSecurity.lean)
+
+| Theorem | Statement |
+|---|---|
+| `Negligible.of_le` | Negligibility is downward-closed |
+| `Negligible.add` | Sum of negligible functions is negligible |
+| `uov_euf_cma` | `Negligible (UOV.advantage A)` — proved from two axioms |
+
+---
+
+## What Is Axiomatized
+
+| Axiom | Why it cannot be proved |
+|---|---|
+| `PPT`, `PPT.run`, `PPT.comp` | No Turing machine model is formalized |
+| `MQ.advantage` | Requires probability distributions over key space |
+| `MQ.hard` | Average-case MQ hardness — an open complexity assumption |
+| `UOV.advantage` | Same as `MQ.advantage` |
+| `uov_reduces_to_mq` | Requires showing UOV keys are pseudorandom among MQ instances |
+
+The security proof `uov_euf_cma` uses exactly two cryptographic axioms (`MQ.hard` and `uov_reduces_to_mq`) and one proved lemma (`Negligible.of_le`). Everything else in the proof chain is a real theorem.
+
+---
+
+## Building
+
+```bash
+git clone https://github.com/beanapologist/UOVscheme
+cd UOVscheme
+lake build
+```
+
+Requires Lean 4 and Lake. Mathlib is fetched automatically.
+
+---
+
+## References
+
+- Patarin, J. (1997). *The Oil and Vinegar Signature Scheme.* Dagstuhl Workshop on Cryptography.
+- NIST PQC: UOV specification (2023 onward).
+- Lean 4: https://lean-lang.org / Mathlib: https://leanprover-community.github.io

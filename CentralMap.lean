@@ -111,8 +111,12 @@ theorem eval_as_linSystem (F : CentralMap q o v)
     (oil : Fin o → ZMod q) (vin : Fin v → ZMod q) :
     F.eval oil vin = F.linMatrix vin |>.mulVec oil + F.vinConstVec vin := by
   funext k
-  simp only [eval, linMatrix, vinConstVec, Pi.add_apply, mulVec_apply]
-  rw [dotProduct_comm]
+  simp only [eval, linMatrix, vinConstVec, Pi.add_apply]
+  -- (linMatrix vin).mulVec oil k  unfolds definitionally to
+  -- dotProduct ((comps k).linCoeff vin) oil
+  have hrhs : (F.linMatrix vin).mulVec oil k =
+              dotProduct ((F.comps k).linCoeff vin) oil := rfl
+  rw [hrhs, dotProduct_comm]
   exact (F.comps k).eval_affine oil vin
 
 end CentralMap
