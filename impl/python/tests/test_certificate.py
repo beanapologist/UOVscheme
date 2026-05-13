@@ -15,7 +15,6 @@ from uov.certificate import (
     StateCertificateV1,
     b64decode_canonical,
     b64encode_canonical,
-    issue_digest_certificate,
     issue_message_certificate,
     message_matches_certificate,
     public_key_wire,

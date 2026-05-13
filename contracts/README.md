@@ -9,7 +9,7 @@ Python issues certificates off-chain (`impl/python/statecert/` + `uov/certificat
 From `contracts/`:
 
 ```bash
-forge install foundry-rs/forge-std@v1.9.4 --no-git --no-commit   # once
+forge install foundry-rs/forge-std@v1.9.4 --no-git   # once
 forge test -vvv
 ```
 

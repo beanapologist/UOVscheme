@@ -84,8 +84,5 @@ jobs:
       - name: Fetch Mathlib build cache
         run: lake exe cache get || echo "Cache fetch failed — building from source"
 
-      - name: Build library
-        run: lake build UOVscheme
-
-      - name: Build tests
-        run: lake build Test
+      - name: Build (library + Test)
+        run: lake build

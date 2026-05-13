@@ -8,6 +8,6 @@ require mathlib from git
 
 lean_lib UOVscheme where
   -- No `globs` specified
-  
+
 lean_lib Test where
   roots := #[`Test.SchemeTest, `Test.CentralMapTest, `Test.CertificateTest]

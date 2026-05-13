@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import random
 import sys
@@ -19,7 +18,6 @@ from statecert import (
     StateCertificate,
     StateVerifier,
     chain_state_to_digest,
-    cross_chain_to_digest,
     intra_chain_transition_to_digest,
 )
 from uov import RandomAdapter, keygen

@@ -17,9 +17,9 @@ _root = Path(__file__).resolve().parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
-from uov import RandomAdapter, keygen
-from uov.params import NIST_STYLE_PRIME_I_MIN
-from statecert import (
+from uov import RandomAdapter, keygen  # noqa: E402
+from uov.params import NIST_STYLE_PRIME_I_MIN  # noqa: E402
+from statecert import (  # noqa: E402
     CRTBridge,
     ChainState,
     CrossChainStateTransition,

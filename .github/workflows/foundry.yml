@@ -25,7 +25,7 @@ jobs:
 
       - name: Install forge-std
         working-directory: contracts
-        run: forge install foundry-rs/forge-std@v1.9.4 --no-git --no-commit
+        run: forge install foundry-rs/forge-std@v1.9.4 --no-git
 
       - name: forge test
         working-directory: contracts
