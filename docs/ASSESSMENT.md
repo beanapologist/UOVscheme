@@ -49,11 +49,12 @@ A **Lean 4 formal verification project** that recasts the Oil-and-Vinegar (OV) c
 | `public_map_embedding_T` | `F η (-η) = μ` | Medium — see bug section below |
 | `public_map_interrogation_F` | String-typed; vacuous | Low |
 | `public_map_composition` | String-typed; vacuous | Low |
-| `public_map_is_interrogation` | String-typed; vacuous | Low |
-| `signature_equilibrium_point` | String-typed; vacuous | Low |
-| `trapdoor_hardness_requires_observer_frame` | String-typed; vacuous | Low |
+| `public_map_is_interrogation` | Definitional expansion of `UOVKey.publicEval` | **Updated** — real `rfl` lemma (`UOV.lean`) |
+| `signature_equilibrium_point` | `∃! w : ℂ, …` | **Updated** — proved via `BalanceHypothesis.unified_balance` |
+| `trapdoor_hardness_mq` | `Negligible (MQ.advantage A)` | **Updated** — restates axiom `MQ.hard` (`UOV.lean`) |
+| `vinegar_observer_linearizes` | `eval_as_linSystem` alias | **Updated** — finite-field observer frame (`UOV.lean`) |
 | `unified_balance` (BalanceHypothesis.lean:50) | Existence-uniqueness of constrained z | Medium |
-| All four `DualityStructure` theorems | String-typed; vacuous | Low |
+| All four `DualityStructure` theorems | String-typed; vacuous | Low → **N/A**: module is comments + `InterrogationStructure` only |
 
 ---
 
@@ -89,16 +90,9 @@ The theorem claims `F η (-η) = μ`, i.e., `η + i·(-η) = μ`.
 
 These are different complex numbers. The correct statement would be `F (-η) η = μ` (swap signs), or alternatively define F differently. As stated, no proof exists because the claim is false. The `sorry` is hiding an incorrect theorem.
 
-### 3. Vacuous string-typed theorems
+### 3. Formerly vacuous placeholders in `UOV.lean` (addressed)
 
-Lean 4 allows a string literal as a type. `"some text" : Type` is valid syntax; the string literal `"some text"` is simultaneously the type and its unique inhabitant. Any `sorry` for such a theorem is therefore trivially provable with `rfl`, and the theorem carries zero mathematical content.
-
-Examples:
-```lean
-theorem trapdoor_hardness_requires_observer_frame :
-    "Inverting C without knowing (Re < 0) is hard (conjectured)" := sorry
-```
-This proves nothing about hardness. Replace with a real Prop or remove entirely.
+Several theorems were `True := trivial` or trivial `∀ …, True`. They are now either removed or replaced with meaningful statements: `vinegar_observer_linearizes` (alias of `CentralMap.eval_as_linSystem`), `trapdoor_hardness_mq` (alias of `MQ.hard`), `public_map_is_interrogation` (definitional `rfl` for `publicEval`), and `signature_equilibrium_point` (`unified_balance`). Older internal-assessment examples that used **string-typed** pseudo-theorems referred to an earlier revision of the repo, not the current `BalanceHypothesis` / `DualityStructure` sources.
 
 ### 4. `BalanceHypothesis` hypotheses are vacuous or mistyped
 
@@ -146,7 +140,7 @@ There is no:
 
 ### The "trapdoor" `C(r) = 2r/(1+r²)` is not a cryptographic trapdoor
 
-A cryptographic trapdoor is easy to compute, hard to invert without extra information, and efficiently invertible with the private key. `C` is a smooth function from ℝ to ℝ. Its inverse is explicitly computable (roots of the quadratic `r² - (2/c)r + 1 = 0`), so it offers no computational hardness. The theorem `trapdoor_hardness_requires_observer_frame` (which is also vacuous) gestures at hardness without establishing it.
+A cryptographic trapdoor is easy to compute, hard to invert without extra information, and efficiently invertible with the private key. `C` is a smooth function from ℝ to ℝ. Its inverse is explicitly computable (roots of the quadratic `r² - (2/c)r + 1 = 0`), so it offers no computational hardness. MQ-style hardness is stated separately in `MQProblem.lean` (`MQ.hard`); `UOV.lean` exposes it as `trapdoor_hardness_mq`.
 
 ---
 

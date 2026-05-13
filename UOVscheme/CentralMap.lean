@@ -109,7 +109,7 @@ def vinConstVec (F : CentralMap q o v) (vin : Fin v → ZMod q) : Fin o → ZMod
     M(vin) · oil = y − b(vin). -/
 theorem eval_as_linSystem (F : CentralMap q o v)
     (oil : Fin o → ZMod q) (vin : Fin v → ZMod q) :
-    F.eval oil vin = F.linMatrix vin |>.mulVec oil + F.vinConstVec vin := by
+    F.eval oil vin = (F.linMatrix vin).mulVec oil + F.vinConstVec vin := by
   funext k
   simp only [eval, linMatrix, vinConstVec, Pi.add_apply]
   -- (linMatrix vin).mulVec oil k  unfolds definitionally to

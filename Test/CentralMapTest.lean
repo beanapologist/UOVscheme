@@ -7,6 +7,7 @@
 -/
 
 import UOVscheme.CentralMap
+import Mathlib.Data.Matrix.Notation
 
 open Matrix
 
@@ -82,11 +83,11 @@ example : comp1.eval oil0 vin0 =
 #eval testF.eval oil0 vin0   -- should print a pair (mod 7 values)
 
 -- Matrix-vector form: M(vin) ·ᵥ oil + b(vin) should match
-#eval testF.linMatrix vin0 |>.mulVec oil0 + testF.vinConstVec vin0
+#eval (testF.linMatrix vin0).mulVec oil0 + testF.vinConstVec vin0
 
 -- Confirm: the linearization theorem holds numerically
 example : testF.eval oil0 vin0 =
-    testF.linMatrix vin0 |>.mulVec oil0 + testF.vinConstVec vin0 := by native_decide
+    (testF.linMatrix vin0).mulVec oil0 + testF.vinConstVec vin0 := by native_decide
 
 -- ════════════════════════════════════════════════════════════════
 -- Section 3: second input pair to exercise more values
@@ -96,7 +97,7 @@ def oil1 : Fin 2 → ZMod 7 := ![0, 6]
 def vin1 : Fin 2 → ZMod 7 := ![4, 3]
 
 #eval testF.eval oil1 vin1
-#eval testF.linMatrix vin1 |>.mulVec oil1 + testF.vinConstVec vin1
+#eval (testF.linMatrix vin1).mulVec oil1 + testF.vinConstVec vin1
 
 example : testF.eval oil1 vin1 =
-    testF.linMatrix vin1 |>.mulVec oil1 + testF.vinConstVec vin1 := by native_decide
+    (testF.linMatrix vin1).mulVec oil1 + testF.vinConstVec vin1 := by native_decide

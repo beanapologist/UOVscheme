@@ -1,12 +1,13 @@
 """pytest suite — mirrors every Lean theorem in CentralMap.lean and SchemeCorrectness.lean."""
 
+import os
 import random
 import sys
-import os
+import warnings
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from uov import keygen
+from uov import RandomAdapter, hash_message_to_digest, keygen
 from uov.field import dot, mat_mul_vec, gauss_solve, gf_matinv
 from uov.central_map import CentralMapComp, CentralMap
 
@@ -14,13 +15,16 @@ from uov.central_map import CentralMapComp, CentralMap
 # ── helpers ──────────────────────────────────────────────────────────────────
 
 
+def det_rng(seed: int) -> RandomAdapter:
+    return RandomAdapter(random.Random(seed))
+
+
 def make_comp(q, o, v, seed):
-    rng = random.Random(seed)
-    return CentralMapComp.random(q, o, v, rng)
+    return CentralMapComp.random(q, o, v, det_rng(seed))
 
 
 def make_key(q, o, v, seed=0):
-    return keygen(q, o, v, seed=seed)
+    return keygen(q, o, v, rng=det_rng(seed), allow_toy_params=True)
 
 
 # ── eval_affine (CentralMapComp.eval_affine in Lean) ─────────────────────────
@@ -48,31 +52,31 @@ class TestEvalAffine:
     def test_random_large(self):
         """100 random checks over GF(31) with o=4, v=8."""
         q, o, v = 31, 4, 8
-        rng = random.Random(7)
+        rng = det_rng(7)
         comp = make_comp(q, o, v, seed=3)
         for _ in range(100):
-            oil = [rng.randrange(q) for _ in range(o)]
-            vin = [rng.randrange(q) for _ in range(v)]
+            oil = [rng.randbelow(q) for _ in range(o)]
+            vin = [rng.randbelow(q) for _ in range(v)]
             lhs = comp.eval(oil, vin)
             rhs = (dot(oil, comp.lin_coeff(vin), q) + comp.vin_const(vin)) % q
             assert lhs == rhs
 
     def test_zero_oil(self):
         """At oil=0, eval equals vinConst."""
-        q, o, v = 13, 3, 5
+        q, o, v = 13, 3, 6
         comp = make_comp(q, o, v, seed=1)
-        rng = random.Random(2)
+        rng = det_rng(2)
         for _ in range(20):
-            vin = [rng.randrange(q) for _ in range(v)]
+            vin = [rng.randbelow(q) for _ in range(v)]
             assert comp.eval([0] * o, vin) == comp.vin_const(vin)
 
     def test_zero_vin(self):
         """At vin=0, eval equals dot(c, oil) + e."""
-        q, o, v = 13, 3, 5
+        q, o, v = 13, 3, 6
         comp = make_comp(q, o, v, seed=2)
-        rng = random.Random(3)
+        rng = det_rng(3)
         for _ in range(20):
-            oil = [rng.randrange(q) for _ in range(o)]
+            oil = [rng.randbelow(q) for _ in range(o)]
             expected = (dot(comp.c, oil, q) + comp.e) % q
             assert comp.eval(oil, [0] * v) == expected
 
@@ -85,11 +89,11 @@ class TestEvalAsLinSystem:
 
     def test_random(self):
         q, o, v = 31, 4, 6
-        rng = random.Random(10)
+        rng = det_rng(10)
         F = CentralMap.random(q, o, v, rng)
         for _ in range(50):
-            oil = [rng.randrange(q) for _ in range(o)]
-            vin = [rng.randrange(q) for _ in range(v)]
+            oil = [rng.randbelow(q) for _ in range(o)]
+            vin = [rng.randbelow(q) for _ in range(v)]
             lhs = F.eval(oil, vin)
             M = F.lin_matrix(vin)
             b = F.vin_const_vec(vin)
@@ -110,18 +114,18 @@ class TestGaussSolve:
 
     def test_random_systems(self):
         q = 31
-        rng = random.Random(42)
+        rng = det_rng(42)
         for _ in range(50):
-            n = rng.randint(2, 6)
+            n = 2 + rng.randbelow(5)
             inv_attempt = None
             for _ in range(20):
-                M = [[rng.randrange(q) for _ in range(n)] for _ in range(n)]
+                M = [[rng.randbelow(q) for _ in range(n)] for _ in range(n)]
                 inv_attempt = gf_matinv(M, q)
                 if inv_attempt is not None:
                     break
             if inv_attempt is None:
                 continue
-            b = [rng.randrange(q) for _ in range(n)]
+            b = [rng.randbelow(q) for _ in range(n)]
             x = gauss_solve(M, b, q)
             assert x is not None
             check = mat_mul_vec(M, x, q)
@@ -142,49 +146,49 @@ class TestUOVCorrectness:
     def test_roundtrip_many(self):
         """100 random key/message round trips over GF(31), o=4, v=8."""
         q, o, v = 31, 4, 8
-        rng = random.Random(99)
+        rng = det_rng(99)
         for i in range(100):
             key = make_key(q, o, v, seed=i)
-            msg = [rng.randrange(q) for _ in range(o)]
+            msg = [rng.randbelow(q) for _ in range(o)]
             sig = key.sign(msg, rng)
             assert sig is not None, f"signing failed on iteration {i}"
             assert key.verify(msg, sig), f"verify failed on iteration {i}"
 
     def test_wrong_message_rejected(self):
         q, o, v = 31, 4, 8
-        rng = random.Random(7)
+        rng = det_rng(7)
         key = make_key(q, o, v, seed=5)
-        msg = [rng.randrange(q) for _ in range(o)]
+        msg = [rng.randbelow(q) for _ in range(o)]
         sig = key.sign(msg, rng)
         wrong = [(x + 1) % q for x in msg]
         assert not key.verify(wrong, sig)
 
     def test_zero_vector_rejected(self):
         q, o, v = 31, 4, 8
-        rng = random.Random(8)
+        rng = det_rng(8)
         key = make_key(q, o, v, seed=6)
-        msg = [rng.randrange(q) for _ in range(o)]
+        msg = [rng.randbelow(q) for _ in range(o)]
         assert not key.verify(msg, [0] * (o + v))
 
     def test_forgery_1000(self):
         """1000 random forgeries should all be rejected (astronomically likely)."""
         q, o, v = 31, 4, 8
-        rng = random.Random(77)
+        rng = det_rng(77)
         key = make_key(q, o, v, seed=7)
-        msg = [rng.randrange(q) for _ in range(o)]
+        msg = [rng.randbelow(q) for _ in range(o)]
         n = o + v
         accepted = sum(
-            key.verify(msg, [rng.randrange(q) for _ in range(n)]) for _ in range(1000)
+            key.verify(msg, [rng.randbelow(q) for _ in range(n)]) for _ in range(1000)
         )
         assert accepted == 0
 
     def test_different_keys_same_message(self):
         """Signature from key1 must not verify under key2."""
         q, o, v = 31, 4, 8
-        rng = random.Random(55)
+        rng = det_rng(55)
         key1 = make_key(q, o, v, seed=10)
         key2 = make_key(q, o, v, seed=11)
-        msg = [rng.randrange(q) for _ in range(o)]
+        msg = [rng.randbelow(q) for _ in range(o)]
         sig = key1.sign(msg, rng)
         assert key1.verify(msg, sig)
         assert not key2.verify(msg, sig)
@@ -192,19 +196,22 @@ class TestUOVCorrectness:
     def test_small_field(self):
         """GF(2) — edge case where almost everything is 0 or 1."""
         q, o, v = 2, 2, 4
-        rng = random.Random(0)
+        rng = det_rng(0)
         key = make_key(q, o, v, seed=0)
         for msg in [[a, b] for a in range(2) for b in range(2)]:
             sig = key.sign(msg, rng)
             if sig is not None:
                 assert key.verify(msg, sig)
 
-    def test_parameters_gf7_o3_v5(self):
-        q, o, v = 7, 3, 5
-        rng = random.Random(33)
-        key = make_key(q, o, v, seed=33)
+    def test_parameters_gf7_o2_v5(self):
+        """GF(7), o=2, v=5 (v >= 2o)."""
+        q, o, v = 7, 2, 5
+        rng = det_rng(33)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            key = keygen(q, o, v, rng=rng, allow_toy_params=True)
         for _ in range(30):
-            msg = [rng.randrange(q) for _ in range(o)]
+            msg = [rng.randbelow(q) for _ in range(o)]
             sig = key.sign(msg, rng)
             assert sig is not None
             assert key.verify(msg, sig)
@@ -212,16 +219,71 @@ class TestUOVCorrectness:
     def test_public_eval_consistent(self):
         """public_eval(sign(oil, vin)) == F.eval(oil, vin) for known oil/vin."""
         q, o, v = 31, 4, 8
-        rng = random.Random(1234)
+        rng = det_rng(1234)
         key = make_key(q, o, v, seed=22)
-        oil = [rng.randrange(q) for _ in range(o)]
-        vin = [rng.randrange(q) for _ in range(v)]
+        oil = [rng.randbelow(q) for _ in range(o)]
+        vin = [rng.randbelow(q) for _ in range(v)]
         y = key.F.eval(oil, vin)
-
-        from uov.field import mat_mul_vec
 
         combined = oil + vin
         sigma = mat_mul_vec(key.T_inv, combined, q)
 
         assert key.public_eval(sigma) == y
         assert key.verify(y, sigma)
+
+
+# ── hash-then-sign & CSPRNG keygen ───────────────────────────────────────────
+
+
+class TestHashThenSign:
+    def test_roundtrip_bytes(self):
+        q, o, v = 31, 4, 8
+        key = make_key(q, o, v, seed=101)
+        rng = det_rng(202)
+        m = b"hello world"
+        sig = key.sign_message(m, rng=rng)
+        assert sig is not None
+        assert key.verify_message(m, sig)
+
+    def test_wrong_message_bytes(self):
+        q, o, v = 31, 4, 8
+        key = make_key(q, o, v, seed=303)
+        rng = det_rng(404)
+        sig = key.sign_message(b"alice", rng=rng)
+        assert sig is not None
+        assert not key.verify_message(b"bob", sig)
+
+    def test_hash_deterministic(self):
+        y1 = hash_message_to_digest(31, 4, b"x")
+        y2 = hash_message_to_digest(31, 4, b"x")
+        assert y1 == y2
+
+
+class TestKeygenCsprng:
+    def test_distinct_keys_high_probability(self):
+        q, o, v = 31, 4, 8
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            k1 = keygen(q, o, v, allow_toy_params=True)
+            k2 = keygen(q, o, v, allow_toy_params=True)
+        assert k1.F.comps[0].e != k2.F.comps[0].e or k1.T != k2.T
+
+
+class TestParamValidation:
+    def test_rejects_non_prime_q(self):
+        import pytest
+
+        with pytest.raises(ValueError, match="prime"):
+            keygen(4, 2, 4, rng=det_rng(1), allow_toy_params=True)
+
+    def test_rejects_v_lt_2o(self):
+        import pytest
+
+        with pytest.raises(ValueError, match="2\\*o"):
+            keygen(7, 3, 5, rng=det_rng(1), allow_toy_params=True)
+
+    def test_rejects_toy_without_flag(self):
+        import pytest
+
+        with pytest.raises(ValueError, match="128"):
+            keygen(31, 4, 8, rng=det_rng(1), allow_toy_params=False)

@@ -1,0 +1,5 @@
+# Lean / Lake build cache (do not commit)
+.lake/
+
+# OS / editor
+.DS_Store

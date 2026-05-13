@@ -1,7 +1,10 @@
 """GF(q) arithmetic primitives (q prime)."""
 
-import random
+from __future__ import annotations
+
 from typing import List, Optional
+
+from .rng import FieldRng
 
 
 def gf_inv(a: int, q: int) -> int:
@@ -99,17 +102,17 @@ def gf_matinv(M: List[List[int]], q: int) -> Optional[List[List[int]]]:
     return [[aug[i][n + j] for j in range(n)] for i in range(n)]
 
 
-def gf_random_invertible(n: int, q: int, rng: random.Random) -> List[List[int]]:
+def gf_random_invertible(n: int, q: int, rng: FieldRng) -> List[List[int]]:
     """Sample a random invertible n×n matrix over GF(q)."""
     while True:
-        M = [[rng.randrange(q) for _ in range(n)] for _ in range(n)]
+        M = [[rng.randbelow(q) for _ in range(n)] for _ in range(n)]
         if gf_matinv(M, q) is not None:
             return M
 
 
-def random_matrix(rows: int, cols: int, q: int, rng: random.Random) -> List[List[int]]:
-    return [[rng.randrange(q) for _ in range(cols)] for _ in range(rows)]
+def random_matrix(rows: int, cols: int, q: int, rng: FieldRng) -> List[List[int]]:
+    return [[rng.randbelow(q) for _ in range(cols)] for _ in range(rows)]
 
 
-def random_vec(n: int, q: int, rng: random.Random) -> List[int]:
-    return [rng.randrange(q) for _ in range(n)]
+def random_vec(n: int, q: int, rng: FieldRng) -> List[int]:
+    return [rng.randbelow(q) for _ in range(n)]

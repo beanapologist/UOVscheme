@@ -20,10 +20,11 @@
 import UOVscheme.CentralMap
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.Data.Fin.Tuple.Basic
+import Mathlib.Data.ZMod.Basic
 
 open Matrix
 
-variable {q o v : ℕ}
+variable {q o v : ℕ} [Fact (Nat.Prime q)]
 
 -- ════════════════════════════════════════════════════════════════
 -- Key structure
@@ -35,8 +36,9 @@ variable {q o v : ℕ}
     invertible affine transformation on 𝔽_q^(o+v).  The public key is the
     composed map P = F ∘ T, whose structure hides the oil subspace.
 
-    We store det T ≠ 0 as a witness that T is invertible; Lean's
-    `Matrix.nonsing_inv` then gives us T⁻¹ automatically. -/
+    We store det T ≠ 0 as a witness that T is invertible; over `ZMod q` with
+    prime `q`, this implies `IsUnit (det T)` and Mathlib's matrix inverse `T⁻¹`
+    is a true two-sided inverse (`mul_nonsing_inv`). -/
 structure UOVKey (q o v : ℕ) where
   F   : CentralMap q o v
   T   : Matrix (Fin (o + v)) (Fin (o + v)) (ZMod q)
@@ -57,8 +59,7 @@ def vinPart (x : Fin (o + v) → ZMod q) : Fin v → ZMod q :=
 
 /-- The public map P(σ) = F(T(σ)), evaluated at a candidate signature σ. -/
 def publicEval (key : UOVKey q o v) (σ : Fin (o + v) → ZMod q) : Fin o → ZMod q :=
-  let x := key.T.mulVec σ
-  key.F.eval (oilPart x) (vinPart x)
+  key.F.eval (oilPart (key.T.mulVec σ)) (vinPart (key.T.mulVec σ))
 
 -- ════════════════════════════════════════════════════════════════
 -- Sign and Verify
@@ -70,10 +71,10 @@ def publicEval (key : UOVKey q o v) (σ : Fin (o + v) → ZMod q) : Fin o → ZM
     M(vin) · oil = y − b(vin), solves it (using `eval_as_linSystem`),
     and calls this function.  Here we parameterise over an already-found
     solution to keep the correctness statement clean. -/
-def sign (key : UOVKey q o v)
+noncomputable def sign (key : UOVKey q o v)
     (oil : Fin o → ZMod q) (vin : Fin v → ZMod q) :
     Fin (o + v) → ZMod q :=
-  key.T.nonsing_inv.mulVec (Fin.append oil vin)
+  key.T⁻¹.mulVec (Fin.append oil vin)
 
 /-- Verification: the signature is valid iff the public map evaluates to y. -/
 def verify (key : UOVKey q o v)
@@ -96,10 +97,11 @@ def verify (key : UOVKey q o v)
            = y                       -- by hypothesis h_solve
 
     The whole proof follows from three matrix-level facts in Mathlib:
-      (1) Matrix.mul_mulVec       — (A·B)·v = A·(B·v)
-      (2) Matrix.mul_nonsing_inv  — T · T⁻¹ = 1  (when det T ≠ 0)
-      (3) Matrix.one_mulVec       — 1 · v = v
-    plus two Fin.append splitting lemmas. -/
+      (1) `Matrix.mulVec_mulVec` — associativity of `mulVec`
+      (2) `Matrix.mul_nonsing_inv` — `T * T⁻¹ = 1` when `IsUnit (det T)`
+      (3) `Matrix.one_mulVec` — identity acts trivially on vectors
+
+    Nonzero determinant in the field `ZMod q` (`q` prime) gives `IsUnit (det T)`. -/
 theorem correctness (key : UOVKey q o v)
     (y   : Fin o → ZMod q)
     (oil : Fin o → ZMod q)
@@ -107,20 +109,25 @@ theorem correctness (key : UOVKey q o v)
     (h_solve : key.F.eval oil vin = y) :
     key.verify y (key.sign oil vin) := by
   unfold verify publicEval sign oilPart vinPart
+  have hTdet : IsUnit key.T.det := (isUnit_iff_ne_zero).mpr key.hT
   -- Step 1: T · (T⁻¹ · (oil ++ vin)) = oil ++ vin
-  have hTinv : key.T.mulVec (key.T.nonsing_inv.mulVec (Fin.append oil vin)) =
+  have hTinv : key.T.mulVec (key.T⁻¹.mulVec (Fin.append oil vin)) =
                Fin.append oil vin := by
-    rw [← mul_mulVec, mul_nonsing_inv key.T key.hT, one_mulVec]
+    rw [Matrix.mulVec_mulVec (Fin.append oil vin) key.T key.T⁻¹,
+      Matrix.mul_nonsing_inv key.T hTdet, Matrix.one_mulVec]
   -- Step 2: rewrite T · σ to oil ++ vin
-  rw [hTinv]
-  -- Step 3: splitting Fin.append oil vin recovers oil and vin component-wise
-  have h_oil : (fun i : Fin o => Fin.append oil vin (i.castAdd v)) = oil :=
-    funext (Fin.append_left oil vin)
-  have h_vin : (fun j : Fin v => Fin.append oil vin (j.natAdd o)) = vin :=
-    funext (Fin.append_right oil vin)
-  rw [h_oil, h_vin]
-  -- Step 4: F.eval oil vin = y by hypothesis
+  rw [hTinv, congr_arg₂ key.F.eval (funext (Fin.append_left oil vin)) (funext (Fin.append_right oil vin))]
   exact h_solve
+
+/-- **Corollary (Sign → Verify)** — same content as `correctness`; name matches
+    external docs / hackathon narrative (`sign_then_verify`). -/
+theorem sign_then_verify (key : UOVKey q o v)
+    (y   : Fin o → ZMod q)
+    (oil : Fin o → ZMod q)
+    (vin : Fin v → ZMod q)
+    (h_solve : key.F.eval oil vin = y) :
+    key.verify y (key.sign oil vin) :=
+  correctness key y oil vin h_solve
 
 end UOVKey
 

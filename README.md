@@ -2,6 +2,7 @@
 
 [![Lean](https://github.com/beanapologist/UOVscheme/actions/workflows/lean.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/lean.yml)
 [![Python](https://github.com/beanapologist/UOVscheme/actions/workflows/python.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/python.yml)
+[![Foundry](https://github.com/beanapologist/UOVscheme/actions/workflows/foundry.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/foundry.yml)
 [![C++](https://github.com/beanapologist/UOVscheme/actions/workflows/cpp.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/cpp.yml)
 [![Rust](https://github.com/beanapologist/UOVscheme/actions/workflows/rust.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/rust.yml)
 [![Release](https://github.com/beanapologist/UOVscheme/actions/workflows/release.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/release.yml)
@@ -60,29 +61,65 @@ Alice knows which variables are oil and which are vinegar (the Re/Im split). Thi
 
 ---
 
+## Duality ↔ Cryptography (name map)
+
+The **ℝ/ℂ** story (`OilVinegar.lean`, `BalanceHypothesis.lean`, `UOV.lean`) is a separate lens from the **finite-field** UOV construction (`CentralMap.lean`, `SchemeCorrectness.lean`, `UOVSecurity.lean`).  The table links narrative names in `UOV.lean` to the lemmas or axioms where the real mathematics lives.
+
+| Narrative (`UOV.lean`) | Cryptographic counterpart |
+|:---|:---|
+| `vinegar_observer_linearizes` | Same statement as `CentralMap.eval_as_linSystem` — fixing vinegar, `F` is affine in oil |
+| `trapdoor_hardness_mq` | Same content as axiom `MQ.hard` — average-case MQ / preimage hardness |
+| `public_map_is_interrogation` | Definitional expansion of `UOVKey.publicEval` (`SchemeCorrectness.lean`) |
+| `signature_equilibrium_point` | Theorem `BalanceHypothesis.unified_balance` — uniqueness of `μ` on `S¹` |
+| Coherence `C`, silver ratio `η`, equilibrium `μ` | **Not** a substitute for a computational trapdoor; the actual trapdoor is `(F, T)` over `ZMod q` |
+| `CRTBridge.encode` / `decode` | Mathlib `ZMod.chineseRemainder` — **bidirectional** CRT glue for coprime moduli (pedagogical “synchrony”; not one-way) |
+
+Security of the signature scheme is still only as strong as the two axioms in `UOVSecurity.lean` (`uov_reduces_to_mq`, `MQ.hard`); see the expanded docstrings there and in `MQProblem.lean` for what a full formalization would have to prove.
+
+---
+
 ## Project Structure
 
 ```
 UOVscheme/
+├── docs/                        # Hackathon / assessment write-ups
+│   ├── README.md
+│   ├── DORAHACKS_SUBMISSION.md  #   SilentVerify / RootCert (AWS Activate draft)
+│   └── ASSESSMENT.md
+├── branding/
+│   └── silentverify-logo.png    #   SilentVerify + pen mark
+├── contracts/                   # On-chain posting / verifier strategy (see contracts/README.md)
+│   ├── README.md
+│   ├── foundry.toml             #   forge test (AnchorRegistry + fixtures)
+│   ├── evm/SilentVerifyAnchorRegistry.sol
+│   ├── test/AnchorRegistry.t.sol
+│   ├── test/fixtures/           #   state_cert_wire.json (regen: impl/python/scripts/gen_foundry_fixture.py)
+│   └── cosmos/README.md
+├── programs/silentverify/       # Solana posting patterns (README)
 ├── lakefile.lean
 ├── UOVscheme/                   # Lean source (all modules)
 │   ├── OilVinegar.lean          #   C, η, μ and their properties (all proved)
 │   ├── DualityStructure.lean    #   Abstract witness/observer framework
+│   ├── CRTBridge.lean           #   CRT as encode/decode (ZMod; pedagogical)
 │   ├── BalanceHypothesis.lean   #   Four constraints + uniqueness theorem
 │   ├── UOV.lean                 #   Duality lens applied to OV
 │   ├── CentralMap.lean          #   Actual UOV map over ZMod q; linearization
-│   ├── SchemeCorrectness.lean   #   UOVKey, Sign, Verify, correctness theorem
+│   ├── SchemeCorrectness.lean   #   UOVKey, Sign, Verify, correctness, sign_then_verify
+│   ├── Certificate.lean         #   StateCertificate bundle (Lean)
 │   ├── SecurityModel.lean       #   Negligible, PPT (axiomatized)
 │   ├── MQProblem.lean           #   MQ adversary, MQ.hard axiom
 │   └── UOVSecurity.lean         #   EUF-CMA theorem (proved from two axioms)
 ├── Test/                        # Empirical tests (native_decide + #eval)
-│   ├── CentralMapTest.lean      #   Linearization checks over ZMod 7
-│   └── SchemeTest.lean          #   Sign/Verify round trips, forged sig rejection
+│   ├── CentralMapTest.lean
+│   ├── SchemeTest.lean
+│   └── CertificateTest.lean
 └── impl/                        # Runnable implementations
     ├── python/                  # Pure-Python (no dependencies)
-    │   ├── uov/                 #   Package: field, central_map, scheme, keygen
-    │   ├── examples/demo.py     #   Alice/Bob/Eve walkthrough over GF(31)
-    │   └── tests/               #   16 pytest tests (all green)
+    │   ├── uov/                 #   Core UOV: field, central_map, scheme, keygen, certificate
+    │   ├── statecert/           #   SilentVerify: anchors, digests, evm/solana/cosmos RPC, verifier
+    │   ├── demos/               #   silentverify_demo.py — end-to-end walkthrough
+    │   ├── examples/            #   demo.py (Alice/Bob/Eve), issue_certificate_demo.py
+    │   └── tests/               #   pytest (uov + statecert + certificates)
     ├── cpp/                     # C++17 header-only library
     │   ├── include/uov/         #   field.hpp, central_map.hpp, scheme.hpp, keygen.hpp
     │   ├── src/demo.cpp         #   Alice/Bob/Eve walkthrough
@@ -100,9 +137,22 @@ UOVscheme/
 **Python** (requires Python 3.8+, pytest optional):
 ```bash
 cd impl/python
-python examples/demo.py          # Alice/Bob/Eve demo
-python -m pytest tests/ -v       # 16 tests
+python examples/demo.py          # Alice/Bob/Eve (cryptographic walkthrough)
+python demos/silentverify_demo.py   # SilentVerify: CRT → chain state → cert → verify
+python -m pytest tests/ -v       # Full pytest suite
 ```
+
+**Multi-chain anchors (stdlib RPC):** build canonical objects, then `StateVerifier.issue_for_anchor` (or the typed helpers):
+
+| Stack | Fetcher | Anchor type |
+|-------|---------|-------------|
+| EVM | `statecert.fetch_chain_state_evm` | `ChainState` (`eip155:…`, `state_root_hex`) |
+| Solana | `statecert.fetch_solana_commitment` | `SolanaCommitment` (cluster, slot, blockhash b58) |
+| Cosmos (Tendermint LCD) | `statecert.fetch_cosmos_commitment` | `CosmosCommitment` (chain id, height, `app_hash`) |
+
+Cross-ecosystem pairs use `CrossL1Commitment` + `issue_for_cross_l1`. Intra-chain stepping uses `issue_for_intra_solana` / `issue_for_intra_cosmos` (or existing EVM `issue_for_intra_chain`).
+
+**On-chain posting / verifier options:** see [`contracts/README.md`](contracts/README.md) — EVM registry `contracts/evm/SilentVerifyAnchorRegistry.sol` (`postFullWire` vs `postCommitmentOnly`), plus Solana / Cosmwasm notes under `programs/silentverify/` and `contracts/cosmos/`. Full UOV verification on-chain at production parameters is expected to use optimistic, SNARK, or oracle patterns rather than naive bytecode.
 
 **C++** (requires CMake 3.14+, C++17 compiler):
 ```bash
@@ -164,9 +214,9 @@ cargo test                 # 15 tests
 |---|---|
 | `PPT`, `PPT.run`, `PPT.comp` | No Turing machine model is formalized |
 | `MQ.advantage` | Requires probability distributions over key space |
-| `MQ.hard` | Average-case MQ hardness — an open complexity assumption |
+| `MQ.hard` | Average-case MQ hardness — **standard cryptographic assumption**, not a consequence of Lean's logic or of P ≠ NP alone.  Conceptually bundles a probability space, a success event, PPT adversaries, and negligibility; see the module doc at the top of `MQProblem.lean`. |
 | `UOV.advantage` | Same as `MQ.advantage` |
-| `uov_reduces_to_mq` | Requires showing UOV keys are pseudorandom among MQ instances |
+| `uov_reduces_to_mq` | Requires distributions + pseudorandomness of UOV keys among MQ instances — **standard assumption**, spelled out as proof obligations in the axiom's docstring in `UOVSecurity.lean`. |
 
 The security proof `uov_euf_cma` uses exactly two cryptographic axioms (`MQ.hard` and `uov_reduces_to_mq`) and one proved lemma (`Negligible.of_le`). Everything else in the proof chain is a real theorem.
 
@@ -192,6 +242,7 @@ Each component has its own GitHub Actions pipeline triggered by path filters so 
 |---|---|---|
 | **Lean** | `UOVscheme/**`, `lakefile.lean` | `lake build`, `sorry` scan |
 | **Python** | `impl/python/**` | pytest × {3.9, 3.11, 3.12}, ruff lint + format, coverage ≥ 90% |
+| **Foundry** | `contracts/**` | `forge test` on `SilentVerifyAnchorRegistry` + Python-generated wire fixture |
 | **C++** | `impl/cpp/**` | cmake/ninja × {gcc, clang} × {Debug, Release}, ASAN+UBSAN, clang-tidy |
 | **Rust** | `impl/rust/**` | cargo test × {stable, beta}, rustfmt, clippy -D warnings, Miri |
 | **Release** | `v*` tag push | Packages Python wheel, C++ header zip, Rust `.crate` → GitHub Release |

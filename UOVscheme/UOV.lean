@@ -10,13 +10,23 @@
   
   Every OV theorem is a formal statement about how witness and observer
   are coupled through the interrogation.
+
+  **README bridge:** see section *Duality ↔ Cryptography (name map)* in the
+  repository README for a one-page map from this file's narrative names to
+  `CentralMap.lean` / `SchemeCorrectness.lean` / `MQProblem.lean`.
+
+  **CRT vignette:** `CRTBridge.lean` gives a separate, fully formal “encode/decode”
+  story for coprime moduli (Chinese remainder theorem) — a perfect bridge, unlike MQ.
 -/
 
 import UOVscheme.OilVinegar
 import UOVscheme.DualityStructure
 import UOVscheme.BalanceHypothesis
+import UOVscheme.CentralMap
+import UOVscheme.SchemeCorrectness
+import UOVscheme.MQProblem
 
-open Complex Real
+open Complex Real Matrix
 
 noncomputable section
 
@@ -32,17 +42,8 @@ namespace OilVinegarDuality
 noncomputable def F (v1 v2 : ℝ) : ℂ := v1 + I * v2
 
 -- ════════════════════════════════════════════════════════════════
--- PART 1: VINEGAR = OBSERVER (free, subjective)
+-- PART 1: VINEGAR = OBSERVER (free, subjective) — complex / μ constraints
 -- ════════════════════════════════════════════════════════════════
-
-/-- **Vinegar primitive 1**: The observer's free choice (Im side, additive).
-
-    In OV, vinegar variables are freely chosen before solving begins.
-    The concrete version: CentralMap.eval_as_linSystem shows that fixing
-    vinegar reduces the central map to a linear system in oil variables.
--/
-theorem vinegar_observer_freedom :
-    ∀ (oil₁ oil₂ : Fin 1 → ZMod 2) (vin : Fin 1 → ZMod 2), True := fun _ _ _ => trivial
 
 /-- **Vinegar primitive 2**: Energy conservation (V1).
     The first vinegar constraint: Re(z)² + Im(z)² = 1.
@@ -81,6 +82,22 @@ theorem vinegar_triple_consistent :
     (-μ.re = μ.im) ∧
     (C (1 + 1 / η) = η) :=
   ⟨vinegar_V1_energy_conservation, vinegar_V2_directed_balance, vinegar_V3_self_referential_closure⟩
+
+section CryptoUOV
+variable {q o v : ℕ}
+
+/-- **Vinegar primitive 1** (finite-field / crypto content): once the observer
+    fixes vinegar, the central map is **affine in oil** — equivalently
+    `F(oil, vin) = M(vin)·oil + b(vin)` from `CentralMap.eval_as_linSystem`.
+
+    This is the formal sense in which vinegar is a “free frame” and oil is the
+    unknown solved by linear algebra. -/
+theorem vinegar_observer_linearizes (F : CentralMap q o v)
+    (oil : Fin o → ZMod q) (vin : Fin v → ZMod q) :
+    F.eval oil vin = F.linMatrix vin *ᵥ oil + F.vinConstVec vin :=
+  CentralMap.eval_as_linSystem F oil vin
+
+end CryptoUOV
 
 -- ════════════════════════════════════════════════════════════════
 -- PART 2: OIL = WITNESS (forced, objective)
@@ -200,25 +217,12 @@ theorem trapdoor_reveals_alignment (r : ℝ) (hr : 0 < r) :
     C r ≤ 1 ∧ (C r = 1 ↔ r = 1) :=
   ⟨coherence_le_one r (le_of_lt hr), coherence_eq_one_iff r (le_of_lt hr)⟩
 
-/-- **Trapdoor collective**: C is hard to invert without the observer's frame.
-    Computational hardness of inverting the public map is stated formally
-    as MQ.hard in MQProblem.lean. -/
-theorem trapdoor_hardness_requires_observer_frame : True := trivial
-
--- ════════════════════════════════════════════════════════════════
--- PART 4: PUBLIC MAP = COMPLETE INTERROGATION (P = S ∘ F ∘ T)
--- ════════════════════════════════════════════════════════════════
-
-/-- **Public map stage 1**: Embedding (T).
-    The equilibrium point μ = F(-η, η) satisfies all constraints.
+/-- **Public map stage 1** (complex embedding): μ = F(-η, η).
     Note: F(-η, η) = -η + i·η = e^(i·3π/4) = μ.
     (The original F η (-η) was wrong: that gives η - iη, angle -π/4.)
 -/
 theorem public_map_embedding_T :
     F (-η) η = μ := by
-  -- F(-η, η) = ↑(-η) + I * ↑η  has  re = -η, im = η
-  -- μ = e^(i·3π/4)              has  re = -η  (mu_re_is_neg_eta)
-  --                                   im =  η  (mu_im_is_eta)
   apply Complex.ext
   · simp only [F, Complex.add_re, Complex.ofReal_re, Complex.mul_re,
                Complex.I_re, Complex.I_im, Complex.ofReal_im]
@@ -227,11 +231,30 @@ theorem public_map_embedding_T :
                Complex.I_re, Complex.I_im, Complex.ofReal_re]
     linarith [mu_im_is_eta]
 
-/-- **Public map stages 2–3**: The concrete version of the full interrogation
-    P = F ∘ T is UOVKey.publicEval in SchemeCorrectness.lean.
-    Correctness (Sign always produces a valid preimage of P) is
-    UOVKey.correctness. -/
-theorem public_map_is_interrogation : True := trivial
+section CryptoUOV
+variable {q o v : ℕ}
+
+/-- **Trapdoor / MQ hardness** (cryptographic, not the real `C` on ℝ):
+    inverting a *random-looking* public quadratic map without the secret
+    structure is assumed to give only negligible success probability.
+
+    This is exactly the `MQ.hard` axiom in `MQProblem.lean` (average-case MQ). -/
+theorem trapdoor_hardness_mq [Fact (Nat.Prime q)] (A : MQAdversary q o v) :
+    Negligible (MQ.advantage A) :=
+  MQ.hard A
+
+-- ════════════════════════════════════════════════════════════════
+-- PART 4: PUBLIC MAP = COMPLETE INTERROGATION (P = F ∘ T) on 𝔽_q
+-- ════════════════════════════════════════════════════════════════
+
+/-- **Public map** `P = F ∘ T` on 𝔽_q: evaluation is `F` on the oil/vinegar
+    split of `T·σ` — this is the defining expansion of `UOVKey.publicEval`. -/
+theorem public_map_is_interrogation (key : UOVKey q o v) (σ : Fin (o + v) → ZMod q) :
+    key.publicEval σ =
+      key.F.eval (UOVKey.oilPart (key.T.mulVec σ)) (UOVKey.vinPart (key.T.mulVec σ)) :=
+  rfl
+
+end CryptoUOV
 
 -- ════════════════════════════════════════════════════════════════
 -- PART 5: SIGNATURE = EQUILIBRIUM (μ, the unique solution)
@@ -263,14 +286,19 @@ theorem signature_complete_interrogation :
   ⟨vinegar_V1_energy_conservation, vinegar_V2_directed_balance,
    oil_witness_bounded, oil_witness_period⟩
 
-/-- **Signature collective**: μ is the unique equilibrium.
-    The formal version is unified_balance in BalanceHypothesis.lean:
-    ∃! w : ℂ, |w| = 1 ∧ -w.re = w.im ∧ w.re < 0. -/
-theorem signature_equilibrium_point : True := trivial
+/-- **Signature collective**: μ is the unique complex equilibrium on the
+    unit circle with directed balance and negative real part — proved as
+    `BalanceHypothesis.unified_balance`. -/
+theorem signature_equilibrium_point :
+    ∃! w : ℂ, Complex.abs w = 1 ∧ (-w.re = w.im) ∧ w.re < 0 :=
+  BalanceHypothesis.unified_balance
 
 -- ════════════════════════════════════════════════════════════════
--- PART 6: OV STRUCTURE AT A GLANCE
+-- PART 6: OV STRUCTURE AT A GLANCE (finite-field parameters)
 -- ════════════════════════════════════════════════════════════════
+
+section CryptoUOV
+variable {q o v : ℕ}
 
 /-- **Theorem (Oil-and-Vinegar Duality)**:
     
@@ -282,15 +310,18 @@ theorem signature_equilibrium_point : True := trivial
     5. **Signature** (equilibrium)
 -/
 theorem ov_structure_complete :
-    (∃ V1 V2 V3 : Prop, V1 ∧ V2 ∧ V3) ∧  -- vinegar (observer)
-    (∃ oil : Prop, oil) ∧                  -- oil (witness)
-    (∃ trapdoor : ℝ → ℝ, ∀ r, trapdoor r = C r) ∧  -- trapdoor (C)
-    (μ.re < 0 ∧ -μ.re = μ.im ∧ Complex.abs μ = 1 ∧ μ ^ 8 = 1)  -- signature
-    := by
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · exact ⟨_, _, _, vinegar_triple_consistent⟩
-  · exact ⟨_, oil_determined_by_vinegar.1⟩
-  · exact ⟨fun r => C r, fun r => rfl⟩
-  · exact ⟨oil_witness_dissipative, vinegar_V2_directed_balance, oil_witness_bounded, oil_witness_period⟩
+    (∀ (F : CentralMap q o v) (oil : Fin o → ZMod q) (vin : Fin v → ZMod q),
+        F.eval oil vin = F.linMatrix vin *ᵥ oil + F.vinConstVec vin) ∧
+    vinegar_triple_consistent ∧
+    oil_determined_by_vinegar ∧
+    (∃ trapdoor : ℝ → ℝ, ∀ r, trapdoor r = C r) ∧
+    (μ.re < 0 ∧ -μ.re = μ.im ∧ Complex.abs μ = 1 ∧ μ ^ 8 = 1) :=
+  ⟨vinegar_observer_linearizes,
+   vinegar_triple_consistent,
+   oil_determined_by_vinegar,
+   ⟨fun r => C r, fun r => rfl⟩,
+   ⟨oil_witness_dissipative, vinegar_V2_directed_balance, oil_witness_bounded, mu_pow_eight⟩⟩
+
+end CryptoUOV
 
 end OilVinegarDuality

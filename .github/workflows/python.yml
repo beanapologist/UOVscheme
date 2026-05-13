@@ -41,12 +41,15 @@ jobs:
           python -m pytest tests/ -v \
             --tb=short \
             --cov=uov \
+            --cov=statecert \
             --cov-report=term-missing \
             --cov-fail-under=90
 
-      - name: Run demo (smoke test)
+      - name: Run demos (smoke tests)
         working-directory: impl/python
-        run: python examples/demo.py
+        run: |
+          python examples/demo.py
+          python demos/silentverify_demo.py
 
   lint:
     name: Lint (ruff)
@@ -66,8 +69,8 @@ jobs:
 
       - name: Lint with ruff
         working-directory: impl/python
-        run: ruff check uov/ tests/ examples/
+        run: ruff check uov/ statecert/ tests/ examples/ demos/
 
       - name: Format check
         working-directory: impl/python
-        run: ruff format --check uov/ tests/ examples/
+        run: ruff format --check uov/ statecert/ tests/ examples/ demos/

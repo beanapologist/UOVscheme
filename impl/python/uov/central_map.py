@@ -1,9 +1,12 @@
 """CentralMapComp and CentralMap — Python mirror of CentralMap.lean."""
 
-import random
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import List
+
 from .field import dot, mat_mul_vec, random_matrix, random_vec
+from .rng import FieldRng
 
 
 @dataclass
@@ -45,7 +48,7 @@ class CentralMapComp:
         return (dot(vin, Bvin, self.q) + dot(self.d, vin, self.q) + self.e) % self.q
 
     @staticmethod
-    def random(q: int, o: int, v: int, rng: random.Random) -> "CentralMapComp":
+    def random(q: int, o: int, v: int, rng: FieldRng) -> "CentralMapComp":
         return CentralMapComp(
             q=q,
             o=o,
@@ -54,7 +57,7 @@ class CentralMapComp:
             B=random_matrix(v, v, q, rng),
             c=random_vec(o, q, rng),
             d=random_vec(v, q, rng),
-            e=rng.randrange(q),
+            e=rng.randbelow(q),
         )
 
 
@@ -80,7 +83,7 @@ class CentralMap:
         return [comp.vin_const(vin) for comp in self.comps]
 
     @staticmethod
-    def random(q: int, o: int, v: int, rng: random.Random) -> "CentralMap":
+    def random(q: int, o: int, v: int, rng: FieldRng) -> "CentralMap":
         return CentralMap(
             q=q,
             o=o,

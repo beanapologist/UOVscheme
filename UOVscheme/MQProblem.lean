@@ -18,6 +18,19 @@
   We state (2) as an axiom.  This is honest: it cannot be derived from
   P ≠ NP (which is worst-case), from analytic structure, or from any
   current mathematics.
+
+  ## Conceptual scope of `MQ.advantage` + `MQ.hard` (still **two** axioms)
+
+  A fully formal average-case MQ theorem would separately construct:
+  (i) a probability space over quadratic maps `P` and targets `y`,
+  (ii) a success event “inverter outputs `σ` with `P σ = y`”,
+  (iii) a proof that for every PPT `A`, that probability is negligible in the
+  security parameter.
+
+  We collapse (i)–(iii) into `MQ.advantage` (the numerical success profile as a
+  function `ℕ → ℝ`) and `MQ.hard` (negligibility of that profile).  **No extra
+  axioms** are introduced below — this block is documentation only, to record
+  what a future reduction would have to discharge.
 -/
 
 import UOVscheme.SecurityModel
@@ -86,7 +99,14 @@ axiom MQ.advantage (A : MQAdversary q o v) : ℕ → ℝ
     - Average-case reductions from worst-case MQ are unknown.
     - The resolvent degree of a generic quadratic system is ≥ 2, placing it
       above the floor where analytic linearization techniques (log, Fourier,
-      Cauchy) have grip. -/
+      Cauchy) have grip.
+
+    **Bundled content (informal):** `MQ.hard` simultaneously encodes that `A`
+    is limited to PPT behaviour (via the `MQAdversary` / `PPT` wrapper), that
+    `MQ.advantage A` is the right “success probability vs. parameter” profile,
+    and that this profile is negligible.  Splitting it into separate formal
+    axioms would not add strength unless each piece were then *proved* from a
+    deeper model. -/
 axiom MQ.hard [Fact (Nat.Prime q)] (A : MQAdversary q o v) :
     Negligible (MQ.advantage A)
 

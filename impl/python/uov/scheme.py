@@ -1,10 +1,14 @@
 """UOVKey: public-key evaluation, signing, and verification."""
 
-import random
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import List, Optional
+
 from .central_map import CentralMap
 from .field import mat_mul_vec, gauss_solve
+from .message_hash import hash_message_to_digest
+from .rng import FieldRng, SecretsRng
 
 
 @dataclass
@@ -30,16 +34,19 @@ class UOVKey:
         return self.F.eval(oil, vin)
 
     def sign(
-        self, y: List[int], rng: random.Random, max_attempts: int = 1000
+        self, y: List[int], rng: FieldRng, max_attempts: int = 1000
     ) -> Optional[List[int]]:
-        """Sign message y ∈ GF(q)^o.
+        """Sign digest y ∈ GF(q)^o (use hash_message / sign_message for byte messages).
 
         Chooses random vinegar vin, forms the linear system M(vin)·oil = y − b(vin),
         solves by Gaussian elimination, retries if M is singular.
         Returns T^{-1}·(oil ++ vin), or None if max_attempts exceeded.
+
+        Signing time can vary with retries (not constant-time); do not use in
+        production without side-channel analysis.
         """
         for _ in range(max_attempts):
-            vin = [rng.randrange(self.q) for _ in range(self.v)]
+            vin = [rng.randbelow(self.q) for _ in range(self.v)]
             M = self.F.lin_matrix(vin)
             b = self.F.vin_const_vec(vin)
             rhs = [(y[i] - b[i]) % self.q for i in range(self.o)]
@@ -54,3 +61,20 @@ class UOVKey:
     def verify(self, y: List[int], sigma: List[int]) -> bool:
         """Check that P(σ) = y."""
         return self.public_eval(sigma) == y
+
+    def sign_message(
+        self,
+        message: bytes,
+        rng: Optional[FieldRng] = None,
+        max_attempts: int = 1000,
+    ) -> Optional[List[int]]:
+        """Hash-then-sign: ``y = H(message)``, then ``sign(y, rng)``."""
+        if rng is None:
+            rng = SecretsRng()
+        y = hash_message_to_digest(self.q, self.o, message)
+        return self.sign(y, rng, max_attempts=max_attempts)
+
+    def verify_message(self, message: bytes, sigma: List[int]) -> bool:
+        """Verify signature on byte message (same hash as sign_message)."""
+        y = hash_message_to_digest(self.q, self.o, message)
+        return self.verify(y, sigma)

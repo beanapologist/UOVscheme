@@ -1,0 +1,32 @@
+name: Foundry
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/foundry.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/foundry.yml'
+
+jobs:
+  forge:
+    name: forge test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install forge-std
+        working-directory: contracts
+        run: forge install foundry-rs/forge-std@v1.9.4 --no-git --no-commit
+
+      - name: forge test
+        working-directory: contracts
+        run: forge test -vvv

@@ -88,7 +88,29 @@ axiom UOV.advantage (A : UOV_Forger q o v) : ℕ → ℝ
     distribution — requires showing that UOV public keys are computationally
     indistinguishable from random MQ instances.  This "pseudorandomness of
     UOV public keys" is a standard assumption; formalizing it requires a
-    probabilistic model that is not yet in scope. -/
+    probabilistic model that is not yet in scope.
+
+    **Proof obligations for a future non-axiomatic version** (all meta-math;
+    not formalized here):
+
+    1. **Distributions.** Define measurable spaces / probability measures on
+       UOV public keys and on “random” MQ systems matching the same arity
+       `(o+v → 𝔽_q) → (o → 𝔽_q)`.
+
+    2. **Coupling or reduction.** Exhibit a joint construction (or a sequence
+       of games) so that any UOV forgery event maps to an MQ inversion event
+       with probability loss accounted for in `n`.
+
+    3. **Indistinguishability.** Prove (or assume as a lemma) that UOV keys
+       are pseudorandom among MQ instances at the relevant security level —
+       this is the cryptographic heart of (2).
+
+    4. **Advantage identity.** Show the inequality in this axiom is the
+       correct translation of the game-based EUF-CMA definition into the
+       `UOV.advantage` / `MQ.advantage` numeric profiles.
+
+    Until (1)–(4) are in Lean, `uov_reduces_to_mq` remains the honest
+    one-line encapsulation of that reduction story. -/
 axiom uov_reduces_to_mq (A : UOV_Forger q o v) (n : ℕ) :
     UOV.advantage A n ≤ MQ.advantage A n
 
@@ -130,9 +152,13 @@ theorem uov_euf_cma [Fact (Nat.Prime q)] (A : UOV_Forger q o v) :
 
   CRYPTOGRAPHIC AXIOMS (ours):
     - `MQ.advantage`        — MQProblem.lean: the advantage function exists
-    - `MQ.hard`             — MQProblem.lean: MQ is hard on average
+    - `MQ.hard`             — MQProblem.lean: MQ is hard on average (bundles
+                              PPT restriction + correct success measure +
+                              negligibility; see module doc there)
     - `UOV.advantage`       — here: the UOV advantage function exists
-    - `uov_reduces_to_mq`   — here: UOV advantage ≤ MQ advantage
+    - `uov_reduces_to_mq`   — here: UOV advantage ≤ MQ advantage (bundles
+                              distributions + pseudorandomness of keys +
+                              game translation; see docstring on the axiom)
 
   NO SORRY anywhere in the proof chain for `uov_euf_cma`.
   The theorem is as strong as its axioms — and the axioms are exactly
