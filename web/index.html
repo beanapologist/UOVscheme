@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="SilentVerify — post-quantum state certificates. Explore the idea and paste certificate JSON."
+    />
+    <title>SilentVerify</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <img
+        class="logo"
+        src="assets/silentverify-logo.png"
+        width="120"
+        height="120"
+        alt="SilentVerify logo"
+      />
+      <h1>SilentVerify</h1>
+      <p class="tagline">
+        Portable <strong>state certificates</strong>: bind a digest to chain roots (or other anchors),
+        sign with UOV, verify with one public check — <code>P(σ) = y</code>.
+      </p>
+      <p class="meta">
+        Open research stack:
+        <a href="https://github.com/beanapologist/UOVscheme">UOVscheme on GitHub</a>
+        (Lean proofs + Python + EVM anchor registry).
+      </p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>How it works (plain language)</h2>
+        <ol>
+          <li><strong>Anchor</strong> — Turn chain state (or a cross-chain pair) into canonical bytes → a field digest <code>y</code>.</li>
+          <li><strong>Issue</strong> — A signer with a UOV secret key produces a short signature <code>σ</code>.</li>
+          <li><strong>Verify</strong> — Anyone checks <code>P(σ) = y</code> using only public data — no validator role.</li>
+        </ol>
+      </section>
+
+      <section class="card">
+        <h2>Try the certificate viewer</h2>
+        <p class="hint">
+          Paste a one-line <code>silentverify.state_cert/v1</code> JSON blob (e.g. from the Python toolkit). This page only
+          <strong>formats and checks shape</strong> — real crypto verification stays in the
+          <a href="https://github.com/beanapologist/UOVscheme/tree/main/impl/python">reference implementation</a>.
+        </p>
+        <label for="certIn">Certificate JSON</label>
+        <textarea id="certIn" rows="6" placeholder='{"schema_version":"silentverify.state_cert/v1",...}'></textarea>
+        <div class="row">
+          <button type="button" id="btnParse">Parse &amp; summarize</button>
+          <button type="button" id="btnClear" class="secondary">Clear</button>
+        </div>
+        <pre id="out" class="out" aria-live="polite"></pre>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Hosted statically (no tracking). For demos run locally:
+        <code>cd impl/python &amp;&amp; python demos/silentverify_demo.py</code>
+      </p>
+    </footer>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>

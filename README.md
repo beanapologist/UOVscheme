@@ -2,7 +2,7 @@
 
 [![Lean](https://github.com/beanapologist/UOVscheme/actions/workflows/lean.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/lean.yml)
 [![Python](https://github.com/beanapologist/UOVscheme/actions/workflows/python.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/python.yml)
-[![Foundry](https://github.com/beanapologist/UOVscheme/actions/workflows/foundry.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/foundry.yml)
+[![Pages](https://github.com/beanapologist/UOVscheme/actions/workflows/pages.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/pages.yml)
 [![C++](https://github.com/beanapologist/UOVscheme/actions/workflows/cpp.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/cpp.yml)
 [![Rust](https://github.com/beanapologist/UOVscheme/actions/workflows/rust.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/rust.yml)
 [![Release](https://github.com/beanapologist/UOVscheme/actions/workflows/release.yml/badge.svg)](https://github.com/beanapologist/UOVscheme/actions/workflows/release.yml)
@@ -11,6 +11,8 @@ A Lean 4 project with two layers:
 
 1. **Duality formalization** — the original witness/observer lens on OV, proving properties of the coherence function `C`, the silver ratio `η`, and the equilibrium point `μ = e^(i·3π/4)`.
 2. **Actual cryptographic formalization** — the UOV signature scheme over a finite field `ZMod q`, with a proved correctness theorem and a stated (but necessarily axiomatized) EUF-CMA security theorem.
+
+**Public mini-site:** static explainer + certificate JSON viewer in [`web/`](web/) — deploy free on **GitHub Pages** (see [`web/README.md`](web/README.md); enable *Settings → Pages → GitHub Actions*).
 
 ---
 
@@ -96,6 +98,12 @@ UOVscheme/
 │   ├── test/fixtures/           #   state_cert_wire.json (regen: impl/python/scripts/gen_foundry_fixture.py)
 │   └── cosmos/README.md
 ├── programs/silentverify/       # Solana posting patterns (README)
+├── web/                         # Static consumer mini-site (GitHub Pages)
+│   ├── index.html
+│   ├── styles.css
+│   ├── app.js
+│   ├── assets/silentverify-logo.png
+│   └── README.md
 ├── lakefile.lean
 ├── UOVscheme/                   # Lean source (all modules)
 │   ├── OilVinegar.lean          #   C, η, μ and their properties (all proved)
@@ -240,6 +248,7 @@ Each component has its own GitHub Actions pipeline triggered by path filters so 
 
 | Workflow | Triggers on | What it checks |
 |---|---|---|
+| **GitHub Pages** | `web/**`, `.github/workflows/pages.yml` | Deploy static SilentVerify mini-site |
 | **Lean** | `UOVscheme/**`, `lakefile.lean` | `lake build`, `sorry` scan |
 | **Python** | `impl/python/**` | pytest × {3.9, 3.11, 3.12}, ruff lint + format, combined `uov`+`statecert` coverage ≥ 88% |
 | **Foundry** | `contracts/**` | `forge test` on `SilentVerifyAnchorRegistry` + Python-generated wire fixture |
