@@ -2,6 +2,8 @@
 
 Single-page explainer plus a **WASM-backed** demo: generate `silentverify.state_cert/v1` JSON in the browser (Rust `uov` + `wasm-bindgen`) and run cryptographic verify `P(σ) = y`.
 
+The **Certificate generator** tab produces the cert; **View / verify JSON** is where you inspect, verify, summarize, and copy the blob; **Chain verify (API)** is optional RPC-backed checking (see below).
+
 ## Build WASM (required before `file://` or static hosting)
 
 From repo root:

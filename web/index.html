@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="SilentVerify — post-quantum state certificates. Generate and verify UOV certificates in the browser (WASM)."
+      content="SilentVerify — in-browser UOV state certificate generator and verifier (WASM), plus chain API tools."
     />
-    <title>SilentVerify</title>
+    <title>SilentVerify — certificate generator</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to tools</a>
     <header class="hero">
       <img
         class="logo"
@@ -25,160 +26,191 @@
         sign with UOV, verify with one public check — <code>P(σ) = y</code>.
       </p>
       <p class="meta">
-        Open research stack:
         <a href="https://github.com/beanapologist/UOVscheme">UOVscheme on GitHub</a>
-        (Lean proofs + Python + EVM anchor registry).
+        — Lean proofs, Python <code>statecert</code>, WASM demo, optional chain API.
       </p>
     </header>
 
-    <main>
-      <section class="card">
-        <h2>How it works (plain language)</h2>
-        <ol>
-          <li><strong>Anchor</strong> — Turn chain state (or a cross-chain pair) into canonical bytes → a field digest <code>y</code>.</li>
-          <li><strong>Issue</strong> — A signer with a UOV secret key produces a short signature <code>σ</code>.</li>
-          <li><strong>Verify</strong> — Anyone checks <code>P(σ) = y</code> using only public data — no validator role.</li>
+    <main id="main">
+      <section class="card card-compact">
+        <h2 class="sr-only">How it works</h2>
+        <ol class="steps-inline">
+          <li><strong>Anchor</strong> → digest <code>y</code></li>
+          <li><strong>Issue</strong> → signature <code>σ</code></li>
+          <li><strong>Verify</strong> → <code>P(σ) = y</code></li>
         </ol>
       </section>
 
-      <section class="card">
-        <h2>Live demo (WASM)</h2>
-        <p id="wasmStatus" class="hint" role="status">Loading WASM…</p>
-        <p class="hint">
-          <strong>Demo only:</strong> keys are ephemeral in the browser; use toy-sized parameters (default
-          <code>q=31, o=4, v=8</code>). Same wire format and hash-then-digest path as
-          <code>impl/python/uov/certificate.py</code> / <code>message_hash.py</code>.
-        </p>
-        <label for="msgIn">Message to sign (UTF-8)</label>
-        <textarea id="msgIn" rows="3" placeholder="e.g. my chain state commitment…">hello from SilentVerify</textarea>
-        <div class="grid-params">
-          <div>
-            <label for="paramQ">q (prime)</label>
-            <input id="paramQ" type="number" min="2" value="31" />
-          </div>
-          <div>
-            <label for="paramO">o (oil)</label>
-            <input id="paramO" type="number" min="1" value="4" />
-          </div>
-          <div>
-            <label for="paramV">v (vinegar)</label>
-            <input id="paramV" type="number" min="1" value="8" />
-          </div>
-        </div>
-        <div class="grid-params">
-          <div>
-            <label for="keySeed">Key RNG seed (uint64)</label>
-            <input id="keySeed" type="text" value="42" inputmode="numeric" />
-          </div>
-          <div>
-            <label for="signSeed">Sign RNG seed (uint64)</label>
-            <input id="signSeed" type="text" value="7" inputmode="numeric" />
-          </div>
-        </div>
-        <div class="row">
-          <button type="button" id="btnGenerate">Generate certificate</button>
-          <button type="button" id="btnRandomSeeds" class="secondary">Random seeds</button>
-        </div>
-      </section>
+      <nav class="tab-bar" aria-label="Choose a task">
+        <button type="button" class="tab tab-active" data-tab="panel-wasm" aria-selected="true">
+          Certificate generator
+        </button>
+        <button type="button" class="tab" data-tab="panel-cert" aria-selected="false">View / verify JSON</button>
+        <button type="button" class="tab" data-tab="panel-api" aria-selected="false">Chain verify (API)</button>
+      </nav>
 
-      <section class="card">
-        <h2>Certificate JSON</h2>
-        <p class="hint">
-          Paste a blob or use <strong>Generate certificate</strong> above. <strong>Verify crypto</strong> runs full
-          <code>P(σ) = y</code> in WASM; <strong>Parse &amp; summarize</strong> is shape-only.
-        </p>
-        <label for="certIn"><code>silentverify.state_cert/v1</code></label>
-        <textarea id="certIn" rows="8" placeholder='{"schema_version":"silentverify.state_cert/v1",...}'></textarea>
-        <div class="row">
-          <button type="button" id="btnVerifyCrypto">Verify crypto (WASM)</button>
-          <button type="button" id="btnParse">Parse &amp; summarize</button>
-          <button type="button" id="btnClear" class="secondary">Clear</button>
-        </div>
-        <pre id="out" class="out" aria-live="polite"></pre>
-      </section>
+      <div id="panel-wasm" class="tab-panel" role="tabpanel">
+        <section class="card card-flush">
+          <h2>Generate a <code>silentverify.state_cert/v1</code> certificate</h2>
+          <p id="wasmStatus" class="hint status-line" role="status">Loading WASM…</p>
+          <p class="hint">
+            <strong>Demo:</strong> toy field <code>GF(31)</code>, keys stay in the page. For real chain-bound certs use
+            Python <code>statecert</code> — not this UTF-8 message path.
+          </p>
+          <label for="msgIn">Message</label>
+          <textarea id="msgIn" rows="3" placeholder="Any text to sign…">hello from SilentVerify</textarea>
+          <details class="advanced">
+            <summary>Advanced parameters (optional)</summary>
+            <div class="grid-params">
+              <div>
+                <label for="paramQ">Prime q</label>
+                <input id="paramQ" type="number" min="2" value="31" />
+              </div>
+              <div>
+                <label for="paramO">Oil o</label>
+                <input id="paramO" type="number" min="1" value="4" />
+              </div>
+              <div>
+                <label for="paramV">Vinegar v</label>
+                <input id="paramV" type="number" min="1" value="8" />
+              </div>
+            </div>
+            <div class="grid-params">
+              <div>
+                <label for="keySeed">Key seed</label>
+                <input id="keySeed" type="text" value="42" inputmode="numeric" autocomplete="off" />
+              </div>
+              <div>
+                <label for="signSeed">Sign seed</label>
+                <input id="signSeed" type="text" value="7" inputmode="numeric" autocomplete="off" />
+              </div>
+            </div>
+          </details>
+          <div class="row row-actions">
+            <button type="button" id="btnGenerate" class="btn-lg">Generate certificate</button>
+            <button type="button" id="btnRandomSeeds" class="secondary">New random seeds</button>
+            <button type="button" id="btnResetDemo" class="secondary">Reset demo defaults</button>
+          </div>
+          <p class="hint hint-tight">
+            Next: open <strong>View / verify JSON</strong> to check, copy, or call the chain API.
+          </p>
+          <pre id="outWasm" class="out out-tight" aria-live="polite"></pre>
+        </section>
+      </div>
 
-      <section class="card">
-        <h2>Chain verify (API)</h2>
-        <p class="hint">
-          Calls your <strong>SilentVerify chain API</strong> (Python — server-side RPC, no browser CORS to the chain).
-          Pick the anchor family; the certificate must use the same digest path as
-          <code>StateVerifier.issue_for_chain_state</code> / <code>issue_for_solana</code> / <code>issue_for_cosmos</code> /
-          <code>issue_for_xrp</code> in <code>impl/python/statecert</code> (not the WASM UTF-8 message demo).
-        </p>
-        <label for="apiBase">API base URL</label>
-        <input
-          id="apiBase"
-          type="url"
-          placeholder="http://127.0.0.1:8765"
-          value="http://127.0.0.1:8765"
-          autocomplete="off"
-        />
-        <label for="apiChainKind">Chain / anchor type</label>
-        <select id="apiChainKind" aria-controls="apiFieldsEvm apiFieldsSolana apiFieldsCosmos apiFieldsXrp">
-          <option value="evm" selected>EVM (ChainState)</option>
-          <option value="solana">Solana (slot + blockhash)</option>
-          <option value="cosmos">Cosmos (LCD block header)</option>
-          <option value="xrp">XRPL (ledger hash)</option>
-        </select>
+      <div id="panel-cert" class="tab-panel hidden" role="tabpanel">
+        <section class="card card-flush">
+          <h2>View, verify, or copy</h2>
+          <p class="hint">
+            Paste JSON or switch to <strong>Browser demo</strong> and click <strong>Generate certificate</strong>.
+            <strong>Verify crypto</strong> checks <code>P(σ) = y</code> in WASM. <strong>Summarize</strong> only checks shape.
+          </p>
+          <label for="certIn"><code>silentverify.state_cert/v1</code></label>
+          <textarea id="certIn" rows="10" placeholder='{"schema_version":"silentverify.state_cert/v1",...}'></textarea>
+          <div class="row row-actions">
+            <button type="button" id="btnVerifyCrypto">Verify crypto (WASM)</button>
+            <button type="button" id="btnParse">Summarize</button>
+            <button type="button" id="btnCopyCert" class="secondary">Copy JSON</button>
+            <button type="button" id="btnClear" class="secondary">Clear</button>
+          </div>
+          <pre id="out" class="out out-tight" aria-live="polite"></pre>
+        </section>
+      </div>
 
-        <div id="apiFieldsEvm" class="api-chain-fields">
-          <label for="apiRpc">EVM JSON-RPC URL</label>
+      <div id="panel-api" class="tab-panel hidden" role="tabpanel">
+        <section class="card card-flush">
+          <h2>Match certificate to live chain (server API)</h2>
+          <p class="hint">
+            Run <code>python -m statecert.api_server</code> in <code>impl/python</code>, then set the URL below. The
+            cert must come from Python <code>StateVerifier.issue_for_*</code> (chain digest path), not the WASM message
+            demo.
+          </p>
+          <label for="apiBase">API base URL</label>
           <input
-            id="apiRpc"
+            id="apiBase"
             type="url"
-            placeholder="https://… (public endpoint)"
+            spellcheck="false"
+            placeholder="http://127.0.0.1:8765"
+            value="http://127.0.0.1:8765"
             autocomplete="off"
           />
-          <label for="apiBlock">Block</label>
-          <input id="apiBlock" type="text" value="latest" placeholder='latest | decimal height | 0x…' />
-          <label for="apiCaip2">CAIP-2 chain id (optional)</label>
-          <input id="apiCaip2" type="text" placeholder="omit to use eth_chainId from RPC" />
-        </div>
+          <label for="apiChainKind">Chain type</label>
+          <select id="apiChainKind" aria-describedby="apiChainHelp">
+            <option value="evm" selected>Ethereum / EVM (block + state root)</option>
+            <option value="solana">Solana (slot + blockhash)</option>
+            <option value="cosmos">Cosmos (LCD block)</option>
+            <option value="xrp">XRP Ledger (ledger hash)</option>
+          </select>
+          <p id="apiChainHelp" class="hint hint-tight">
+            Fields below change when you change chain type.
+          </p>
 
-        <div id="apiFieldsSolana" class="api-chain-fields hidden">
-          <label for="apiRpcSol">Solana JSON-RPC URL</label>
-          <input id="apiRpcSol" type="url" placeholder="https://api.mainnet-beta.solana.com" autocomplete="off" />
-          <label for="apiClusterId">cluster_id (stored in anchor)</label>
-          <input id="apiClusterId" type="text" value="mainnet-beta" />
-          <label for="apiSlot">slot (optional, empty = current head)</label>
-          <input id="apiSlot" type="text" placeholder="e.g. 300000000" inputmode="numeric" />
-          <label for="apiCommitment">commitment (getSlot / getBlock)</label>
-          <input id="apiCommitment" type="text" value="finalized" />
-        </div>
+          <div id="apiFieldsEvm" class="api-chain-fields">
+            <label for="apiRpc">EVM JSON-RPC URL</label>
+            <input id="apiRpc" type="url" spellcheck="false" placeholder="https://rpc.ankr.com/eth" autocomplete="off" />
+            <label for="apiBlock">Block</label>
+            <input id="apiBlock" type="text" value="latest" placeholder="latest or block number" />
+            <label for="apiCaip2">CAIP-2 id (optional)</label>
+            <input id="apiCaip2" type="text" placeholder="e.g. eip155:1 — leave blank to use node chainId" />
+          </div>
 
-        <div id="apiFieldsCosmos" class="api-chain-fields hidden">
-          <label for="apiRest">Cosmos REST / LCD base URL</label>
-          <input id="apiRest" type="url" placeholder="https://lcd-cosmoshub.keplr.app" autocomplete="off" />
-          <label for="apiCosmosChainId">Cosmos chain_id (SDK id, e.g. cosmoshub-4)</label>
-          <input id="apiCosmosChainId" type="text" placeholder="cosmoshub-4" />
-          <label for="apiCosmosHeight">height (optional, empty = latest)</label>
-          <input id="apiCosmosHeight" type="text" placeholder="omit for latest" inputmode="numeric" />
-        </div>
+          <div id="apiFieldsSolana" class="api-chain-fields hidden">
+            <label for="apiRpcSol">Solana RPC URL</label>
+            <input
+              id="apiRpcSol"
+              type="url"
+              spellcheck="false"
+              placeholder="https://api.mainnet-beta.solana.com"
+              autocomplete="off"
+            />
+            <label for="apiClusterId">Cluster name (stored in cert)</label>
+            <input id="apiClusterId" type="text" value="mainnet-beta" />
+            <label for="apiSlot">Slot (optional)</label>
+            <input id="apiSlot" type="text" placeholder="Leave empty for current finalized head" inputmode="numeric" />
+            <label for="apiCommitment">RPC commitment level</label>
+            <input id="apiCommitment" type="text" value="finalized" />
+          </div>
 
-        <div id="apiFieldsXrp" class="api-chain-fields hidden">
-          <label for="apiRpcXrp">XRPL JSON-RPC URL</label>
-          <input id="apiRpcXrp" type="url" placeholder="https://s1.ripple.com" autocomplete="off" />
-          <label for="apiXrpNetworkId">network_id (verbatim in anchor, e.g. xrpl-mainnet)</label>
-          <input id="apiXrpNetworkId" type="text" placeholder="xrpl-mainnet" />
-          <label for="apiXrpLedger">ledger_index</label>
-          <input id="apiXrpLedger" type="text" value="validated" placeholder="validated | current | ledger height" />
-        </div>
+          <div id="apiFieldsCosmos" class="api-chain-fields hidden">
+            <label for="apiRest">Cosmos REST base</label>
+            <input id="apiRest" type="url" spellcheck="false" placeholder="https://lcd-cosmoshub.keplr.app" />
+            <label for="apiCosmosChainId">Chain id (e.g. cosmoshub-4)</label>
+            <input id="apiCosmosChainId" type="text" placeholder="cosmoshub-4" />
+            <label for="apiCosmosHeight">Block height (optional)</label>
+            <input id="apiCosmosHeight" type="text" placeholder="Leave empty for latest" inputmode="numeric" />
+          </div>
 
-        <div class="row">
-          <button type="button" id="btnApiVerify">Verify certificate vs live anchor</button>
-        </div>
-        <pre id="apiOut" class="out" aria-live="polite"></pre>
-      </section>
+          <div id="apiFieldsXrp" class="api-chain-fields hidden">
+            <label for="apiRpcXrp">XRPL JSON-RPC URL</label>
+            <input id="apiRpcXrp" type="url" spellcheck="false" placeholder="https://s1.ripple.com" />
+            <label for="apiXrpNetworkId">Network id (must match issuance)</label>
+            <input id="apiXrpNetworkId" type="text" placeholder="xrpl-mainnet" />
+            <label for="apiXrpLedger">Ledger index</label>
+            <input id="apiXrpLedger" type="text" value="validated" placeholder="validated or ledger number" />
+          </div>
+
+          <div class="row row-actions">
+            <button type="button" id="btnApiVerify">Run verify</button>
+          </div>
+          <pre id="apiOut" class="out out-tight" aria-live="polite"></pre>
+        </section>
+      </div>
     </main>
 
     <footer>
-      <p>
-        Hosted statically (no tracking). Local preview: build WASM then serve —
-        <code>cd web/uov-wasm &amp;&amp; wasm-pack build --target web --release --out-dir ../pkg</code> then
-        <code>cd web &amp;&amp; python3 -m http.server 8080</code>. Chain API (optional):
-        <code>cd impl/python &amp;&amp; python -m statecert.api_server</code> — see
-        <code>impl/python/statecert/README_CHAIN_API.md</code>.
-      </p>
+      <details class="footer-details">
+        <summary>Developer commands</summary>
+        <p>
+          WASM build: <code>cd web/uov-wasm &amp;&amp; wasm-pack build --target web --release --out-dir ../pkg</code>
+        </p>
+        <p>Local site: <code>cd web &amp;&amp; python3 -m http.server 8080</code></p>
+        <p>
+          Chain API: <code>cd impl/python &amp;&amp; python -m statecert.api_server</code> —
+          <a href="https://github.com/beanapologist/UOVscheme/blob/main/impl/python/statecert/README_CHAIN_API.md"
+            >README_CHAIN_API.md</a
+          >
+        </p>
+      </details>
     </footer>
 
     <script type="module" src="app.js"></script>

@@ -12,7 +12,9 @@ function summarize(obj) {
   if (obj.q != null) lines.push(`field: GF(${obj.q})  oil o=${obj.o}  vinegar v=${obj.v}`);
   if (Array.isArray(obj.digest_y)) lines.push(`digest_y: length ${obj.digest_y.length}`);
   if (Array.isArray(obj.sigma)) lines.push(`sigma: length ${obj.sigma.length}`);
-  if (obj.pubkey_fp) lines.push(`pubkey_fp: ${String(obj.pubkey_fp).slice(0, 20)}… (${String(obj.pubkey_fp).length} hex chars)`);
+  if (obj.pubkey_fp) {
+    lines.push(`pubkey_fp: ${String(obj.pubkey_fp).slice(0, 20)}… (${String(obj.pubkey_fp).length} hex chars)`);
+  }
   if (obj.metadata && typeof obj.metadata === "object") {
     lines.push(`metadata keys: ${Object.keys(obj.metadata).join(", ") || "(empty)"}`);
   }
@@ -26,11 +28,11 @@ try {
   await init();
   wasmReady = true;
   const st = $("wasmStatus");
-  st.textContent = "WASM loaded: in-browser issue + verify (demo parameters).";
+  st.textContent = "Ready — you can generate a certificate below.";
   st.classList.add("wasm-ready");
 } catch (e) {
   const st = $("wasmStatus");
-  st.textContent = `WASM failed to load (use a local server, not file://): ${e.message}`;
+  st.textContent = `WASM could not load (open this site over http(s), not file://): ${e.message}`;
   st.classList.add("wasm-err");
 }
 
@@ -45,11 +47,30 @@ function readSeed(id, fallback) {
   return BigInt(s);
 }
 
+function switchTab(panelId) {
+  document.querySelectorAll(".tab").forEach((btn) => {
+    const on = btn.dataset.tab === panelId;
+    btn.classList.toggle("tab-active", on);
+    btn.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  document.querySelectorAll(".tab-panel").forEach((panel) => {
+    panel.classList.toggle("hidden", panel.id !== panelId);
+  });
+}
+
+document.querySelectorAll(".tab").forEach((btn) => {
+  btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+});
+
+function setOut(el, cls, text) {
+  el.className = `out out-tight ${cls}`;
+  el.textContent = text;
+}
+
 $("btnGenerate").addEventListener("click", () => {
-  const out = $("out");
+  const out = $("outWasm");
   if (!wasmReady) {
-    out.className = "out err";
-    out.textContent = "WASM not available.";
+    setOut(out, "err", "WASM not available.");
     return;
   }
   const message = $("msgIn").value;
@@ -61,34 +82,38 @@ $("btnGenerate").addEventListener("click", () => {
   try {
     const json = wasm_issue_message_certificate(message, q, o, v, keySeed, signSeed);
     $("certIn").value = json;
-    out.className = "out ok";
-    out.textContent = "Generated silentverify.state_cert/v1 (see textarea). You can “Verify crypto” or “Parse & summarize”.";
+    setOut(
+      out,
+      "ok",
+      "Certificate generated. JSON is in the “Certificate JSON” tab (switched for you). You can verify or copy it there.",
+    );
+    switchTab("panel-cert");
+    $("certIn").focus();
   } catch (e) {
-    out.className = "out err";
-    out.textContent = e?.message ?? String(e);
+    setOut(out, "err", e?.message ?? String(e));
   }
 });
 
 $("btnVerifyCrypto").addEventListener("click", () => {
   const out = $("out");
   if (!wasmReady) {
-    out.className = "out err";
-    out.textContent = "WASM not available.";
+    setOut(out, "err", "WASM not available.");
     return;
   }
   const raw = $("certIn").value.trim();
   if (!raw) {
-    out.className = "out err";
-    out.textContent = "Paste certificate JSON first.";
+    setOut(out, "err", "Add certificate JSON first (generate or paste).");
     return;
   }
   try {
     const ok = wasm_verify_certificate(raw);
-    out.className = ok ? "out ok" : "out err";
-    out.textContent = ok ? "Cryptographic verify: PASS (P(σ) = y under embedded public key)." : "Cryptographic verify: FAIL.";
+    setOut(
+      out,
+      ok ? "ok" : "err",
+      ok ? "PASS — P(σ) = y holds for the embedded public key." : "FAIL — signature does not match digest.",
+    );
   } catch (e) {
-    out.className = "out err";
-    out.textContent = e?.message ?? String(e);
+    setOut(out, "err", e?.message ?? String(e));
   }
 });
 
@@ -96,8 +121,7 @@ $("btnParse").addEventListener("click", () => {
   const out = $("out");
   const raw = $("certIn").value.trim();
   if (!raw) {
-    out.className = "out err";
-    out.textContent = "Paste JSON first.";
+    setOut(out, "err", "Paste JSON first.");
     return;
   }
   try {
@@ -105,11 +129,9 @@ $("btnParse").addEventListener("click", () => {
     if (typeof obj !== "object" || obj === null) {
       throw new Error("Root JSON must be an object.");
     }
-    out.className = "out ok";
-    out.textContent = summarize(obj);
+    setOut(out, "ok", summarize(obj));
   } catch (e) {
-    out.className = "out err";
-    out.textContent = `Invalid JSON: ${e.message}`;
+    setOut(out, "err", `Invalid JSON: ${e.message}`);
   }
 });
 
@@ -117,13 +139,41 @@ $("btnClear").addEventListener("click", () => {
   $("certIn").value = "";
   const out = $("out");
   out.textContent = "";
-  out.className = "out";
+  out.className = "out out-tight";
 });
 
 $("btnRandomSeeds").addEventListener("click", () => {
   const r = () => BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
   $("keySeed").value = String(r());
   $("signSeed").value = String(r());
+});
+
+$("btnResetDemo").addEventListener("click", () => {
+  $("msgIn").value = "hello from SilentVerify";
+  $("paramQ").value = "31";
+  $("paramO").value = "4";
+  $("paramV").value = "8";
+  $("keySeed").value = "42";
+  $("signSeed").value = "7";
+  const ow = $("outWasm");
+  ow.textContent = "";
+  ow.className = "out out-tight";
+});
+
+$("btnCopyCert").addEventListener("click", async () => {
+  const raw = $("certIn").value.trim();
+  const out = $("out");
+  if (!raw) {
+    setOut(out, "err", "Nothing to copy.");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(raw);
+    setOut(out, "ok", "Copied certificate JSON to clipboard.");
+  } catch {
+    $("certIn").select();
+    setOut(out, "ok", "Clipboard blocked — JSON is selected; use Ctrl/Cmd+C.");
+  }
 });
 
 function parseBlockArg(s) {
@@ -157,11 +207,25 @@ function syncApiChainPanels() {
 $("apiChainKind").addEventListener("change", syncApiChainPanels);
 syncApiChainPanels();
 
-async function postChainApi(path, body, out) {
+function summarizeApiPayload(data) {
+  if (!data || typeof data !== "object" || data.result == null) return "";
+  const r = data.result;
+  const parts = [];
+  if (r.ok) parts.push("Overall: PASS.");
+  else parts.push("Overall: FAIL.");
+  if (typeof r.digest_binds_to_anchor === "boolean") {
+    parts.push(r.digest_binds_to_anchor ? "Digest matches live anchor." : "Digest does NOT match live anchor.");
+  }
+  if (typeof r.certificate_crypto_ok === "boolean") {
+    parts.push(r.certificate_crypto_ok ? "UOV verify OK." : "UOV verify failed.");
+  }
+  return `${parts.join(" ")}\n\n`;
+}
+
+async function postChainApi(path, body, outEl) {
   const base = $("apiBase").value.trim().replace(/\/$/, "");
   if (!base) {
-    out.className = "out err";
-    out.textContent = "Set API base URL (run python -m statecert.api_server from impl/python).";
+    setOut(outEl, "err", "Set API base URL, then run: cd impl/python && python -m statecert.api_server");
     return;
   }
   const res = await fetch(`${base}${path}`, {
@@ -174,48 +238,48 @@ async function postChainApi(path, body, out) {
   try {
     data = JSON.parse(text);
   } catch {
-    out.className = "out err";
-    out.textContent = `Non-JSON response (HTTP ${res.status}): ${text.slice(0, 400)}`;
+    setOut(outEl, "err", `Non-JSON response (HTTP ${res.status}): ${text.slice(0, 400)}`);
     return;
   }
   if (!res.ok) {
-    out.className = "out err";
-    out.textContent = JSON.stringify(data, null, 2);
+    setOut(outEl, "err", JSON.stringify(data, null, 2));
     return;
   }
-  out.className = data.result?.ok ? "out ok" : "out err";
-  out.textContent = JSON.stringify(data, null, 2);
+  const summary = summarizeApiPayload(data);
+  outEl.className = `out out-tight ${data.result?.ok ? "ok" : "err"}`;
+  outEl.textContent = `${summary}${JSON.stringify(data, null, 2)}`;
 }
 
 $("btnApiVerify").addEventListener("click", async () => {
   const out = $("apiOut");
+  const btn = $("btnApiVerify");
   const base = $("apiBase").value.trim().replace(/\/$/, "");
   if (!base) {
-    out.className = "out err";
-    out.textContent = "Set API base URL (run python -m statecert.api_server from impl/python).";
+    setOut(out, "err", "Set API base URL first.");
     return;
   }
   const raw = $("certIn").value.trim();
   if (!raw) {
-    out.className = "out err";
-    out.textContent = "Paste the state certificate JSON (from StateVerifier / Python) first.";
+    setOut(out, "err", "Put a chain-issued certificate in the “Certificate JSON” tab first.");
+    switchTab("panel-cert");
     return;
   }
   let certObj;
   try {
     certObj = JSON.parse(raw);
   } catch (e) {
-    out.className = "out err";
-    out.textContent = `Invalid certificate JSON: ${e.message}`;
+    setOut(out, "err", `Invalid certificate JSON: ${e.message}`);
     return;
   }
   const kind = $("apiChainKind").value;
+  const prevLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Verifying…";
   try {
     if (kind === "evm") {
       const rpc = $("apiRpc").value.trim();
       if (!rpc) {
-        out.className = "out err";
-        out.textContent = "Set EVM JSON-RPC URL.";
+        setOut(out, "err", "Set EVM JSON-RPC URL.");
         return;
       }
       const body = {
@@ -231,8 +295,7 @@ $("btnApiVerify").addEventListener("click", async () => {
     if (kind === "solana") {
       const rpc = $("apiRpcSol").value.trim();
       if (!rpc) {
-        out.className = "out err";
-        out.textContent = "Set Solana JSON-RPC URL.";
+        setOut(out, "err", "Set Solana JSON-RPC URL.");
         return;
       }
       const body = {
@@ -242,7 +305,14 @@ $("btnApiVerify").addEventListener("click", async () => {
         commitment: $("apiCommitment").value.trim() || "finalized",
       };
       const slotRaw = $("apiSlot").value.trim();
-      if (slotRaw) body.slot = parseInt(slotRaw, 10);
+      if (slotRaw) {
+        const s = parseInt(slotRaw, 10);
+        if (!Number.isFinite(s)) {
+          setOut(out, "err", "Slot must be a number.");
+          return;
+        }
+        body.slot = s;
+      }
       await postChainApi("/api/v1/solana/verify-state-cert", body, out);
       return;
     }
@@ -250,18 +320,23 @@ $("btnApiVerify").addEventListener("click", async () => {
       const rest = $("apiRest").value.trim();
       const cid = $("apiCosmosChainId").value.trim();
       if (!rest) {
-        out.className = "out err";
-        out.textContent = "Set Cosmos REST base URL.";
+        setOut(out, "err", "Set Cosmos REST base URL.");
         return;
       }
       if (!cid) {
-        out.className = "out err";
-        out.textContent = "Set Cosmos chain_id.";
+        setOut(out, "err", "Set Cosmos chain_id.");
         return;
       }
       const body = { rest_base: rest, chain_id: cid, certificate: certObj };
       const hRaw = $("apiCosmosHeight").value.trim();
-      if (hRaw) body.height = parseInt(hRaw, 10);
+      if (hRaw) {
+        const h = parseInt(hRaw, 10);
+        if (!Number.isFinite(h)) {
+          setOut(out, "err", "Height must be a number.");
+          return;
+        }
+        body.height = h;
+      }
       await postChainApi("/api/v1/cosmos/verify-state-cert", body, out);
       return;
     }
@@ -269,13 +344,11 @@ $("btnApiVerify").addEventListener("click", async () => {
       const rpc = $("apiRpcXrp").value.trim();
       const nid = $("apiXrpNetworkId").value.trim();
       if (!rpc) {
-        out.className = "out err";
-        out.textContent = "Set XRPL JSON-RPC URL.";
+        setOut(out, "err", "Set XRPL JSON-RPC URL.");
         return;
       }
       if (!nid) {
-        out.className = "out err";
-        out.textContent = "Set network_id (must match how the certificate was issued).";
+        setOut(out, "err", "Set network_id (must match issuance).");
         return;
       }
       const body = {
@@ -287,10 +360,11 @@ $("btnApiVerify").addEventListener("click", async () => {
       await postChainApi("/api/v1/xrp/verify-state-cert", body, out);
       return;
     }
-    out.className = "out err";
-    out.textContent = "Unknown chain kind.";
+    setOut(out, "err", "Unknown chain type.");
   } catch (e) {
-    out.className = "out err";
-    out.textContent = e?.message ?? String(e);
+    setOut(out, "err", e?.message ?? String(e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevLabel;
   }
 });
