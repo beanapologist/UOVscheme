@@ -12,7 +12,7 @@ A Lean 4 project with two layers:
 1. **Duality formalization** — the original witness/observer lens on OV, proving properties of the coherence function `C`, the silver ratio `η`, and the equilibrium point `μ = e^(i·3π/4)`.
 2. **Actual cryptographic formalization** — the UOV signature scheme over a finite field `ZMod q`, with a proved correctness theorem and a stated (but necessarily axiomatized) EUF-CMA security theorem.
 
-**Public mini-site:** static explainer + certificate JSON viewer in [`web/`](web/) — deploy free on **GitHub Pages** (see [`web/README.md`](web/README.md); enable *Settings → Pages → GitHub Actions*).
+**Public mini-site:** static explainer + certificate JSON viewer in [`web/`](web/) — deploy free on **GitHub Pages**. **Required once:** *Settings → Pages → Build and deployment → Source: **GitHub Actions*** (otherwise the Pages workflow fails with “Get Pages site failed”). Details: [`web/README.md`](web/README.md).
 
 ---
 

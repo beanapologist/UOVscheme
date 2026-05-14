@@ -1,4 +1,6 @@
 name: GitHub Pages
+# One-time: Settings → Pages → Build and deployment → Source: "GitHub Actions"
+# (otherwise configure-pages hits GET .../pages 404).
 
 on:
   push:
@@ -15,7 +17,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -36,4 +38,4 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
