@@ -41,9 +41,7 @@ def test_fetch_cosmos_commitment_latest():
         return _GetResp(body)
 
     with patch("statecert.cosmos_rpc.urlopen", side_effect=fake_urlopen):
-        c = fetch_cosmos_commitment(
-            "https://lcd.example.com", chain_id="cosmoshub-4"
-        )
+        c = fetch_cosmos_commitment("https://lcd.example.com", chain_id="cosmoshub-4")
 
     assert c.chain_id == "cosmoshub-4"
     assert c.height == 18446744

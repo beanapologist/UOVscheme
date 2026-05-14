@@ -37,7 +37,9 @@ def test_fetch_solana_commitment_fixed_slot():
                 {
                     "jsonrpc": "2.0",
                     "id": 1,
-                    "result": {"blockhash": "8dFhP9xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},
+                    "result": {
+                        "blockhash": "8dFhP9xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    },
                 }
             )
         raise AssertionError(data["method"])
@@ -61,7 +63,9 @@ def test_fetch_solana_head_uses_get_slot_then_block():
                 {
                     "jsonrpc": "2.0",
                     "id": 1,
-                    "result": {"blockhash": "AbCdEfGhIjKlMnOpQrStUvWxYz1234567890abcde"},
+                    "result": {
+                        "blockhash": "AbCdEfGhIjKlMnOpQrStUvWxYz1234567890abcde"
+                    },
                 }
             ),
         ]

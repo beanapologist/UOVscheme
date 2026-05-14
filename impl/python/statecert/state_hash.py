@@ -144,7 +144,9 @@ ChainAnchor = Union[ChainState, SolanaCommitment, CosmosCommitment, CrossL1Commi
 
 def anchor_to_digest(q: int, o: int, anchor: ChainAnchor) -> List[int]:
     """Map any supported anchor object to ``y ∈ GF(q)^o``."""
-    return sha256_preimage_to_digest(q, o, _sha256_digest_bytes(anchor.to_canonical_dict()))
+    return sha256_preimage_to_digest(
+        q, o, _sha256_digest_bytes(anchor.to_canonical_dict())
+    )
 
 
 def chain_state_to_digest(q: int, o: int, state: ChainState) -> List[int]:
@@ -157,7 +159,9 @@ def cross_chain_to_digest(q: int, o: int, x: CrossChainStateTransition) -> List[
     return sha256_preimage_to_digest(q, o, _sha256_digest_bytes(x.to_canonical_dict()))
 
 
-def intra_chain_transition_to_digest(q: int, o: int, prev: ChainState, nxt: ChainState) -> List[int]:
+def intra_chain_transition_to_digest(
+    q: int, o: int, prev: ChainState, nxt: ChainState
+) -> List[int]:
     """Same ``chain_id``: block ``N`` → ``N+1`` (or any ordered pair on one chain)."""
     if prev.chain_id != nxt.chain_id:
         raise ValueError("intra-chain transition requires matching chain_id")

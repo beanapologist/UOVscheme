@@ -85,11 +85,15 @@ def test_fetch_with_explicit_caip2_skips_chain_id():
 
 def test_rpc_error_raises():
     def fake_urlopen(req, timeout=30):  # noqa: ANN001
-        return _FakeResp({"jsonrpc": "2.0", "id": 1, "error": {"code": -32000, "message": "oops"}})
+        return _FakeResp(
+            {"jsonrpc": "2.0", "id": 1, "error": {"code": -32000, "message": "oops"}}
+        )
 
     with patch("statecert.jsonrpc.urlopen", side_effect=fake_urlopen):
         try:
-            fetch_chain_state_evm("https://x", caip2_chain_id="eip155:1", block="latest")
+            fetch_chain_state_evm(
+                "https://x", caip2_chain_id="eip155:1", block="latest"
+            )
         except RuntimeError as e:
             assert "RPC error" in str(e)
         else:

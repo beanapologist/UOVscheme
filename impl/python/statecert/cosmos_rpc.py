@@ -46,6 +46,4 @@ def fetch_cosmos_commitment(
     hmount = int(h_raw)
     raw = base64.b64decode(app_b64)
     app_hex = "0x" + raw.hex()
-    return CosmosCommitment(
-        chain_id=chain_id, height=hmount, app_hash_hex=app_hex
-    )
+    return CosmosCommitment(chain_id=chain_id, height=hmount, app_hash_hex=app_hex)

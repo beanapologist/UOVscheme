@@ -11,7 +11,11 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from uov import RandomAdapter, keygen
-from uov.params import NIST_STYLE_PRIME_I_MIN, NIST_STYLE_PRIME_III, nist_style_prime_params
+from uov.params import (
+    NIST_STYLE_PRIME_I_MIN,
+    NIST_STYLE_PRIME_III,
+    nist_style_prime_params,
+)
 
 
 def test_nist_style_prime_params_named():

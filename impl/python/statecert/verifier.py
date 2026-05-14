@@ -77,7 +77,9 @@ class StateVerifier:
     ) -> StateCertificate:
         inner = issue_digest_certificate(self._key, digest_y, rng)
         fp = fingerprint_public_key(inner.public_key)
-        return StateCertificate(inner=inner, pubkey_fp=fp, metadata=dict(metadata or {}))
+        return StateCertificate(
+            inner=inner, pubkey_fp=fp, metadata=dict(metadata or {})
+        )
 
     def issue_for_chain_state(
         self, state: ChainState, rng, metadata: Optional[Dict[str, Any]] = None
@@ -90,7 +92,10 @@ class StateVerifier:
         return self.issue_on_digest(self.digest_for_anchor(anchor), rng, metadata)
 
     def issue_for_cross_chain(
-        self, x: CrossChainStateTransition, rng, metadata: Optional[Dict[str, Any]] = None
+        self,
+        x: CrossChainStateTransition,
+        rng,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> StateCertificate:
         md = {"flow": "cross_chain", **(metadata or {})}
         return self.issue_on_digest(self.digest_for_cross_chain(x), rng, md)
@@ -129,9 +134,7 @@ class StateVerifier:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> StateCertificate:
         md = {"flow": "intra_solana", **(metadata or {})}
-        return self.issue_on_digest(
-            self.digest_for_intra_solana(prev, nxt), rng, md
-        )
+        return self.issue_on_digest(self.digest_for_intra_solana(prev, nxt), rng, md)
 
     def issue_for_intra_cosmos(
         self,
@@ -141,9 +144,7 @@ class StateVerifier:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> StateCertificate:
         md = {"flow": "intra_cosmos", **(metadata or {})}
-        return self.issue_on_digest(
-            self.digest_for_intra_cosmos(prev, nxt), rng, md
-        )
+        return self.issue_on_digest(self.digest_for_intra_cosmos(prev, nxt), rng, md)
 
     @staticmethod
     def verify_certificate(cert: StateCertificate) -> bool:

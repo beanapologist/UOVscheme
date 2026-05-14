@@ -70,12 +70,18 @@ def main() -> None:
     y2 = verifier.digest_for_cross_chain(x)
     cert2 = verifier.issue_for_cross_chain(x, rng, metadata={"pair": "eth-sol"})
     print(f"  verify cross-chain cert: {StateVerifier.verify_certificate(cert2)}")
-    print(f"  Single-chain digest vs cross-chain digest equal? {y == y2}  (different payloads)")
+    print(
+        f"  Single-chain digest vs cross-chain digest equal? {y == y2}  (different payloads)"
+    )
 
     _hr("6. Tamper check")
     cert_bad = verifier.issue_for_chain_state(eth, RandomAdapter(random.Random(123)))
-    cert_bad.inner.sigma = [(cert_bad.inner.sigma[0] + 1) % key.q] + cert_bad.inner.sigma[1:]
-    print(f"  After flipping one σ coordinate: {StateVerifier.verify_certificate(cert_bad)}")
+    cert_bad.inner.sigma = [
+        (cert_bad.inner.sigma[0] + 1) % key.q
+    ] + cert_bad.inner.sigma[1:]
+    print(
+        f"  After flipping one σ coordinate: {StateVerifier.verify_certificate(cert_bad)}"
+    )
 
     _hr("Done")
     print("  For cryptographic UOV Alice/Bob/Eve, see:  python examples/demo.py")

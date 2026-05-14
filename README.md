@@ -241,7 +241,7 @@ Each component has its own GitHub Actions pipeline triggered by path filters so 
 | Workflow | Triggers on | What it checks |
 |---|---|---|
 | **Lean** | `UOVscheme/**`, `lakefile.lean` | `lake build`, `sorry` scan |
-| **Python** | `impl/python/**` | pytest × {3.9, 3.11, 3.12}, ruff lint + format, coverage ≥ 90% |
+| **Python** | `impl/python/**` | pytest × {3.9, 3.11, 3.12}, ruff lint + format, combined `uov`+`statecert` coverage ≥ 88% |
 | **Foundry** | `contracts/**` | `forge test` on `SilentVerifyAnchorRegistry` + Python-generated wire fixture |
 | **C++** | `impl/cpp/**` | cmake/ninja × {gcc, clang} × {Debug, Release}, ASAN+UBSAN, clang-tidy |
 | **Rust** | `impl/rust/**` | cargo test × {stable, beta}, rustfmt, clippy -D warnings, Miri |

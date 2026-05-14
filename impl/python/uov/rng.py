@@ -11,8 +11,7 @@ from typing import Protocol, runtime_checkable
 class FieldRng(Protocol):
     """Uniform integers in [0, n) for field sampling."""
 
-    def randbelow(self, n: int) -> int:
-        ...
+    def randbelow(self, n: int) -> int: ...
 
 
 class SecretsRng:

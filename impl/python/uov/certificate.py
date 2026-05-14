@@ -127,7 +127,9 @@ class StateCertificateV1:
         return StateCertificateV1.from_wire_dict(json.loads(s))
 
 
-def issue_digest_certificate(key: UOVKey, digest_y: List[int], rng) -> StateCertificateV1:
+def issue_digest_certificate(
+    key: UOVKey, digest_y: List[int], rng
+) -> StateCertificateV1:
     """Sign a raw digest ``y`` (already in ``GF(q)^o``)."""
     sig = key.sign(digest_y, rng)
     if sig is None:
@@ -142,9 +144,7 @@ def issue_digest_certificate(key: UOVKey, digest_y: List[int], rng) -> StateCert
     )
 
 
-def issue_message_certificate(
-    key: UOVKey, message: bytes, rng
-) -> StateCertificateV1:
+def issue_message_certificate(key: UOVKey, message: bytes, rng) -> StateCertificateV1:
     """Hash-then-sign: ``digest_y = H(message)``, then issue."""
     digest_y = hash_message_to_digest(key.q, key.o, message)
     cert = issue_digest_certificate(key, digest_y, rng)

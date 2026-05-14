@@ -27,7 +27,9 @@ def test_anchor_digest_stable_evm():
 
 def test_cross_l1_mixed_digest():
     evm = ChainState("eip155:1", 10, "0x" + "01" * 32)
-    sol = SolanaCommitment("mainnet-beta", 99, "SoLHaShExAmPlExxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    sol = SolanaCommitment(
+        "mainnet-beta", 99, "SoLHaShExAmPlExxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    )
     x = CrossL1Commitment(src=evm, dst=sol)
     y = anchor_to_digest(31, 4, x)
     assert len(y) == 4

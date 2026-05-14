@@ -53,7 +53,9 @@ class TestStateHash:
     def test_determinism(self):
         k = toy_key()
         cs = ChainState("ethereum:1", 1, "0xaa")
-        assert chain_state_to_digest(k.q, k.o, cs) == chain_state_to_digest(k.q, k.o, cs)
+        assert chain_state_to_digest(k.q, k.o, cs) == chain_state_to_digest(
+            k.q, k.o, cs
+        )
 
     def test_sensitivity_block_height(self):
         k = toy_key()
@@ -171,7 +173,9 @@ class TestCrossL1Certificate:
         k = toy_key()
         v = StateVerifier(k)
         evm = ChainState("eip155:1", 1, "0x" + "22" * 32)
-        sol = SolanaCommitment("mainnet-beta", 9, "SoLmEmOxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+        sol = SolanaCommitment(
+            "mainnet-beta", 9, "SoLmEmOxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        )
         x = CrossL1Commitment(src=evm, dst=sol)
         cert = v.issue_for_cross_l1(x, rng(44), metadata={"bridge": "toy"})
         assert StateVerifier.verify_certificate(cert)
@@ -184,7 +188,9 @@ class TestJsonRoundTrip:
     def test_certificate_survives_json(self):
         k = toy_key()
         v = StateVerifier(k)
-        cert = v.issue_for_chain_state(ChainState("ethereum:1", 99, "0z"), rng(8), metadata={"n": 1})
+        cert = v.issue_for_chain_state(
+            ChainState("ethereum:1", 99, "0z"), rng(8), metadata={"n": 1}
+        )
         js = cert.to_json(indent=None)
         cert2 = StateCertificate.from_json(js)
         assert StateVerifier.verify_certificate(cert2)
@@ -199,7 +205,9 @@ class TestPublicKeyFingerprint:
 
     def test_fp_changes_with_key(self):
         k1, k2 = toy_key(21), toy_key(22)
-        assert StateVerifier.public_key_fingerprint(k1) != StateVerifier.public_key_fingerprint(k2)
+        assert StateVerifier.public_key_fingerprint(
+            k1
+        ) != StateVerifier.public_key_fingerprint(k2)
 
 
 class TestIntraChainValidation:
