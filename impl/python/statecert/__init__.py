@@ -12,6 +12,7 @@ from .state_hash import (
     CrossChainStateTransition,
     CrossL1Commitment,
     SolanaCommitment,
+    XrpLedgerCommitment,
     anchor_to_digest,
     chain_state_to_digest,
     cosmos_commitment_to_digest,
@@ -21,8 +22,10 @@ from .state_hash import (
     intra_cosmos_height_transition_to_digest,
     intra_solana_slot_transition_to_digest,
     solana_commitment_to_digest,
+    xrp_commitment_to_digest,
 )
 from .verifier import StateVerifier
+from .xrp_rpc import fetch_xrp_ledger_commitment
 
 __all__ = [
     "ChainAnchor",
@@ -31,6 +34,7 @@ __all__ = [
     "CrossChainStateTransition",
     "CrossL1Commitment",
     "SolanaCommitment",
+    "XrpLedgerCommitment",
     "CRTBridge",
     "StateCertificate",
     "StateVerifier",
@@ -42,9 +46,11 @@ __all__ = [
     "fetch_chain_state_evm",
     "fetch_cosmos_commitment",
     "fetch_solana_commitment",
+    "fetch_xrp_ledger_commitment",
     "fingerprint_public_key",
     "intra_chain_transition_to_digest",
     "intra_cosmos_height_transition_to_digest",
     "intra_solana_slot_transition_to_digest",
     "solana_commitment_to_digest",
+    "xrp_commitment_to_digest",
 ]

@@ -44,6 +44,14 @@ class TestStateHash:
         y = chain_state_to_digest(k.q, k.o, cs)
         assert len(y) == k.o
 
+    def test_xrp_digest_length(self):
+        from statecert.state_hash import XrpLedgerCommitment, xrp_commitment_to_digest
+
+        k = toy_key()
+        x = XrpLedgerCommitment("xrpl-mainnet", 80_000_000, "0x" + "ab" * 32)
+        y = xrp_commitment_to_digest(k.q, k.o, x)
+        assert len(y) == k.o
+
     def test_digest_range(self):
         k = toy_key()
         cs = ChainState("solana:mainnet", 300_000_000, "deadbeef")

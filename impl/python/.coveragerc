@@ -1,0 +1,3 @@
+[run]
+omit =
+    statecert/api_server.py

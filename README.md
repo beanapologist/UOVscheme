@@ -12,7 +12,8 @@ A Lean 4 project with two layers:
 1. **Duality formalization** — the original witness/observer lens on OV, proving properties of the coherence function `C`, the silver ratio `η`, and the equilibrium point `μ = e^(i·3π/4)`.
 2. **Actual cryptographic formalization** — the UOV signature scheme over a finite field `ZMod q`, with a proved correctness theorem and a stated (but necessarily axiomatized) EUF-CMA security theorem.
 
-**Public mini-site:** static explainer + certificate JSON viewer in [`web/`](web/) — deploy free on **GitHub Pages**. 
+**Public mini-site:** static explainer + **WASM** certificate generator / verifier in [`web/`](web/) (Rust `uov` via `wasm-bindgen`), plus a browser UI for the multi-chain **verify API** (EVM / Solana / Cosmos / XRPL). Deploy free on **GitHub Pages**. **Required once:** *Settings → Pages → Build and deployment → Source: **GitHub Actions*** (otherwise the Pages workflow can fail with “Get Pages site failed”). Details: [`web/README.md`](web/README.md).
+
 ---
 
 ## Alice, Bob, and Eve
@@ -101,6 +102,8 @@ UOVscheme/
 │   ├── index.html
 │   ├── styles.css
 │   ├── app.js
+│   ├── pkg/                     # WASM bundle (gitignored; built by CI / wasm-pack)
+│   ├── uov-wasm/                # wasm-bindgen crate → ../pkg
 │   ├── assets/silentverify-logo.png
 │   └── README.md
 ├── lakefile.lean
@@ -156,8 +159,11 @@ python -m pytest tests/ -v       # Full pytest suite
 | EVM | `statecert.fetch_chain_state_evm` | `ChainState` (`eip155:…`, `state_root_hex`) |
 | Solana | `statecert.fetch_solana_commitment` | `SolanaCommitment` (cluster, slot, blockhash b58) |
 | Cosmos (Tendermint LCD) | `statecert.fetch_cosmos_commitment` | `CosmosCommitment` (chain id, height, `app_hash`) |
+| XRPL | `statecert.fetch_xrp_ledger_commitment` | `XrpLedgerCommitment` (`network_id`, `ledger_index`, `ledger_hash_hex`) |
 
 Cross-ecosystem pairs use `CrossL1Commitment` + `issue_for_cross_l1`. Intra-chain stepping uses `issue_for_intra_solana` / `issue_for_intra_cosmos` (or existing EVM `issue_for_intra_chain`).
+
+**Chain verify API:** `python -m statecert.api_server` (from `impl/python`) — `POST /api/v1/evm|solana|cosmos|xrp/verify-state-cert` (server-side RPC + digest binding + UOV verify); see [`impl/python/statecert/README_CHAIN_API.md`](impl/python/statecert/README_CHAIN_API.md). The [`web/`](web/) UI can call it when the API URL is reachable (CORS defaults to `*`).
 
 **On-chain posting / verifier options:** see [`contracts/README.md`](contracts/README.md) — EVM registry `contracts/evm/SilentVerifyAnchorRegistry.sol` (`postFullWire` vs `postCommitmentOnly`), plus Solana / Cosmwasm notes under `programs/silentverify/` and `contracts/cosmos/`. Full UOV verification on-chain at production parameters is expected to use optimistic, SNARK, or oracle patterns rather than naive bytecode.
 
@@ -247,7 +253,7 @@ Each component has its own GitHub Actions pipeline triggered by path filters so 
 
 | Workflow | Triggers on | What it checks |
 |---|---|---|
-| **GitHub Pages** | `web/**`, `.github/workflows/pages.yml` | Deploy static SilentVerify mini-site |
+| **GitHub Pages** | `web/**`, `impl/rust/**`, `.github/workflows/pages.yml` | Build WASM (`web/uov-wasm` → `web/pkg/`), deploy static SilentVerify mini-site |
 | **Lean** | `UOVscheme/**`, `lakefile.lean` | `lake build`, `sorry` scan |
 | **Python** | `impl/python/**` | pytest × {3.9, 3.11, 3.12}, ruff lint + format, combined `uov`+`statecert` coverage ≥ 88% |
 | **Foundry** | `contracts/**` | `forge test` on `SilentVerifyAnchorRegistry` + Python-generated wire fixture |

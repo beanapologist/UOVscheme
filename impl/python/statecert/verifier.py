@@ -15,6 +15,7 @@ from .state_hash import (
     CrossChainStateTransition,
     CrossL1Commitment,
     SolanaCommitment,
+    XrpLedgerCommitment,
     anchor_to_digest,
     chain_state_to_digest,
     cosmos_commitment_to_digest,
@@ -24,6 +25,7 @@ from .state_hash import (
     intra_cosmos_height_transition_to_digest,
     intra_solana_slot_transition_to_digest,
     solana_commitment_to_digest,
+    xrp_commitment_to_digest,
 )
 
 
@@ -54,6 +56,9 @@ class StateVerifier:
 
     def digest_for_cosmos(self, c: CosmosCommitment) -> List[int]:
         return cosmos_commitment_to_digest(self._key.q, self._key.o, c)
+
+    def digest_for_xrp(self, x: XrpLedgerCommitment) -> List[int]:
+        return xrp_commitment_to_digest(self._key.q, self._key.o, x)
 
     def digest_for_intra_solana(
         self, prev: SolanaCommitment, nxt: SolanaCommitment
@@ -115,6 +120,11 @@ class StateVerifier:
         self, c: CosmosCommitment, rng, metadata: Optional[Dict[str, Any]] = None
     ) -> StateCertificate:
         return self.issue_for_anchor(c, rng, metadata)
+
+    def issue_for_xrp(
+        self, x: XrpLedgerCommitment, rng, metadata: Optional[Dict[str, Any]] = None
+    ) -> StateCertificate:
+        return self.issue_for_anchor(x, rng, metadata)
 
     def issue_for_intra_chain(
         self,

@@ -9,6 +9,8 @@
 
 **SilentVerify** — post-quantum-capable **state certificates**: compact UOV signatures checked with a single public-map evaluation \(P(\sigma) = y\), aligned with the machine-checked Lean 4 corpus in this repository (**UOVscheme**). **RootCert** names the binding story: canonical state bytes → hash → digest \(y\) → UOV. The proof object lives in **GF(q)^o** (field-theoretic digest space). **Logo:** [`../branding/silentverify-logo.png`](../branding/silentverify-logo.png).
 
+**Alternate BUIDL “Details” narrative (Alice / Bob / Eve):** [DORAHACKS_BUIDL_ALICE_BOB_EVE.md](DORAHACKS_BUIDL_ALICE_BOB_EVE.md) — paste-friendly for DoraHacks.
+
 ---
 
 ## Elevator pitch

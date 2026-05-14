@@ -1,0 +1,19 @@
+[package]
+name = "uov_wasm"
+version = "0.1.0"
+edition = "2021"
+description = "WASM bindings for UOV state certificates (SilentVerify demo)"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+uov = { path = "../../impl/rust" }
+wasm-bindgen = "0.2"
+serde_json = "1"
+sha2 = "0.10"
+sha3 = "0.10"
+
+[profile.release]
+opt-level = "z"
+lto = true

@@ -119,11 +119,30 @@ class CosmosCommitment:
 
 
 @dataclass(frozen=True)
-class CrossL1Commitment:
-    """Two single-chain anchors from possibly different ecosystems (EVM / Solana / Cosmos)."""
+class XrpLedgerCommitment:
+    """XRPL (rippled) anchor: validated ledger index + ``ledger_hash`` (hex, ``0x``-prefixed)."""
 
-    src: Union[ChainState, SolanaCommitment, CosmosCommitment]
-    dst: Union[ChainState, SolanaCommitment, CosmosCommitment]
+    network_id: str
+    ledger_index: int
+    ledger_hash_hex: str
+
+    def to_canonical_dict(self) -> Dict[str, Any]:
+        h = self.ledger_hash_hex.strip().lower()
+        hx = h if h.startswith("0x") else "0x" + h
+        return {
+            "kind": "XrpLedgerCommitment",
+            "network_id": self.network_id,
+            "ledger_index": int(self.ledger_index),
+            "ledger_hash_hex": hx,
+        }
+
+
+@dataclass(frozen=True)
+class CrossL1Commitment:
+    """Two single-chain anchors from possibly different ecosystems (EVM / Solana / Cosmos / XRPL)."""
+
+    src: Union[ChainState, SolanaCommitment, CosmosCommitment, XrpLedgerCommitment]
+    dst: Union[ChainState, SolanaCommitment, CosmosCommitment, XrpLedgerCommitment]
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         return {
@@ -134,12 +153,18 @@ class CrossL1Commitment:
 
 
 def _anchor_to_dict(
-    a: Union[ChainState, SolanaCommitment, CosmosCommitment],
+    a: Union[ChainState, SolanaCommitment, CosmosCommitment, XrpLedgerCommitment],
 ) -> Dict[str, Any]:
     return a.to_canonical_dict()
 
 
-ChainAnchor = Union[ChainState, SolanaCommitment, CosmosCommitment, CrossL1Commitment]
+ChainAnchor = Union[
+    ChainState,
+    SolanaCommitment,
+    CosmosCommitment,
+    XrpLedgerCommitment,
+    CrossL1Commitment,
+]
 
 
 def anchor_to_digest(q: int, o: int, anchor: ChainAnchor) -> List[int]:
@@ -180,6 +205,10 @@ def solana_commitment_to_digest(q: int, o: int, s: SolanaCommitment) -> List[int
 
 def cosmos_commitment_to_digest(q: int, o: int, c: CosmosCommitment) -> List[int]:
     return anchor_to_digest(q, o, c)
+
+
+def xrp_commitment_to_digest(q: int, o: int, x: XrpLedgerCommitment) -> List[int]:
+    return anchor_to_digest(q, o, x)
 
 
 def cross_l1_commitment_to_digest(q: int, o: int, x: CrossL1Commitment) -> List[int]:
