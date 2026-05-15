@@ -125,13 +125,17 @@
             cert must come from Python <code>StateVerifier.issue_for_*</code> (chain digest path), not the WASM message
             demo.
           </p>
+          <p class="hint hint-tight" id="apiHttpsNote" hidden>
+            This page is <strong>HTTPS</strong> (for example GitHub Pages). Browsers block calls to
+            <code>http://127.0.0.1</code> (mixed content). Use an <strong>https://</strong> API with CORS, or open this
+            site over plain <code>http://</code> locally (see footer) and use <code>http://127.0.0.1:8765</code>.
+          </p>
           <label for="apiBase">API base URL</label>
           <input
             id="apiBase"
             type="url"
             spellcheck="false"
             placeholder="http://127.0.0.1:8765"
-            value="http://127.0.0.1:8765"
             autocomplete="off"
           />
           <label for="apiChainKind">Chain type</label>

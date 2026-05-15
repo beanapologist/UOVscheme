@@ -36,6 +36,23 @@ try {
   st.classList.add("wasm-err");
 }
 
+/** GitHub Pages is HTTPS; http://127.0.0.1 default would always fail (mixed content). */
+function configureApiBaseForPageOrigin() {
+  const el = $("apiBase");
+  const note = $("apiHttpsNote");
+  if (!el) return;
+  if (location.protocol === "https:") {
+    el.value = "";
+    el.placeholder = "https://your-api.example (http://127.0.0.1 blocked on HTTPS pages)";
+    if (note) note.hidden = false;
+  } else {
+    el.placeholder = "http://127.0.0.1:8765";
+    if (!el.value.trim()) el.value = "http://127.0.0.1:8765";
+    if (note) note.hidden = true;
+  }
+}
+configureApiBaseForPageOrigin();
+
 function readU32(id, fallback) {
   const n = Number.parseInt(String($(id).value).trim(), 10);
   return Number.isFinite(n) && n >= 0 ? n : fallback;
@@ -362,7 +379,21 @@ $("btnApiVerify").addEventListener("click", async () => {
     }
     setOut(out, "err", "Unknown chain type.");
   } catch (e) {
-    setOut(out, "err", e?.message ?? String(e));
+    const msg = e?.message ?? String(e);
+    let hint = "";
+    if (msg === "Failed to fetch" || msg.includes("Load failed") || msg.includes("NetworkError")) {
+      if (location.protocol === "https:" && base.startsWith("http:")) {
+        hint =
+          "\n\nHTTPS cannot call http:// APIs (mixed content). Use an https:// API base with CORS, or serve this site over http:// locally and use http://127.0.0.1:8765.";
+      } else if (/127\.0\.0\.1|localhost/i.test(base) && !/^127\.0\.0\.1$|^localhost$/i.test(location.hostname)) {
+        hint =
+          "\n\nFrom a deployed host, 127.0.0.1 means the visitor’s own machine, not a server behind the site URL. Expose your API on a reachable https:// host (tunnel or cloud) and allow CORS for this origin.";
+      } else {
+        hint =
+          "\n\nCheck the API URL, CORS (SILENTVERIFY_CORS_ORIGIN on the Python server), and that the server is running.";
+      }
+    }
+    setOut(out, "err", msg + hint);
   } finally {
     btn.disabled = false;
     btn.textContent = prevLabel;

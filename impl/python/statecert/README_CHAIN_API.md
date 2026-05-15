@@ -16,6 +16,13 @@ python -m statecert.api_server
 
 Defaults: bind `127.0.0.1:8765`. Override with `SILENTVERIFY_API_HOST`, `SILENTVERIFY_API_PORT`.
 
+### Calling from GitHub Pages (HTTPS)
+
+The hosted mini-site is **HTTPS**. Browsers **block** `fetch()` to `http://127.0.0.1` or any `http://` URL from that page (mixed content). To use chain verify from Pages you need either:
+
+- A **public HTTPS** reverse proxy in front of this API (or a cloud deployment), with `SILENTVERIFY_CORS_ORIGIN` set to your Pages origin (or `*` for demos), or  
+- **Local use:** open the static site over **HTTP** (for example `python3 -m http.server` in `web/`) and keep the API at `http://127.0.0.1:8765`.
+
 ## Routes
 
 | Method | Path | Role |
