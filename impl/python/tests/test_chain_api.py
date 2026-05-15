@@ -36,7 +36,11 @@ from statecert.chain_api import (
     verify_xrp_state_certificate_against_commitment,
     verify_xrp_state_certificate_via_rpc,
 )
-from statecert.state_hash import CrossChainStateTransition, CrossL1Commitment, XrpLedgerCommitment
+from statecert.state_hash import (
+    CrossChainStateTransition,
+    CrossL1Commitment,
+    XrpLedgerCommitment,
+)
 from uov import RandomAdapter, keygen
 
 
@@ -185,7 +189,11 @@ class TestCrossChainEvmTransition:
         monkeypatch.setattr(chain_api_mod, "fetch_chain_state_evm", fake_fetch)
         out = verify_cross_chain_state_transition_via_rpc(
             wire,
-            src={"rpc_url": "https://eth-a.example", "block": "finalized", "caip2_chain_id": "eip155:1"},
+            src={
+                "rpc_url": "https://eth-a.example",
+                "block": "finalized",
+                "caip2_chain_id": "eip155:1",
+            },
             dst={"rpc_url": "https://eth-b.example", "block": 20},
         )
         assert len(calls) == 2
@@ -442,3 +450,266 @@ class TestSolanaCosmosXrpBinding:
         )
         assert c.ledger_index == 42
         assert c.ledger_hash_hex == "0x" + "aa" * 32
+
+
+class TestChainApiValidationAndCoverage:
+    def test_enforce_evm_depth_zero_skips_jsonrpc(self, monkeypatch):
+        calls = []
+
+        def trap_jsonrpc(*a, **k):
+            calls.append(1)
+            return "0x10"
+
+        monkeypatch.setattr(chain_api_mod, "jsonrpc_call", trap_jsonrpc)
+        st = ChainState("eip155:1", 1, "0x" + "aa" * 32)
+        enforce_evm_min_confirmations_behind_tip(
+            "https://x.example", st, 0, timeout=1.0
+        )
+        assert calls == []
+
+    def test_enforce_evm_bad_blocknumber_payload(self, monkeypatch):
+        monkeypatch.setattr(chain_api_mod, "jsonrpc_call", lambda *a, **k: 999)
+        st = ChainState("eip155:1", 1, "0x" + "aa" * 32)
+        with pytest.raises(ValueError, match="eth_blockNumber"):
+            enforce_evm_min_confirmations_behind_tip(
+                "https://x.example", st, 1, timeout=1.0
+            )
+
+    def test_verify_evm_policy_leg_must_be_object(self, monkeypatch):
+        k = _toy_key()
+        v = StateVerifier(k)
+        cs = ChainState("eip155:1", 2, "0x" + "bb" * 32)
+        cert = v.issue_for_chain_state(cs, _rng(30))
+        wire = cert.to_wire_dict()
+
+        def fake_fetch(*a, **k):
+            return cs
+
+        monkeypatch.setattr(chain_api_mod, "fetch_chain_state_evm", fake_fetch)
+        with pytest.raises(ValueError, match="policy leg"):
+            verify_evm_state_certificate_via_rpc(
+                "https://eth.example.com",
+                "latest",
+                wire,
+                policy="not-a-dict",
+            )
+
+    def test_verify_evm_policy_min_must_be_int(self, monkeypatch):
+        k = _toy_key()
+        v = StateVerifier(k)
+        cs = ChainState("eip155:1", 2, "0x" + "bb" * 32)
+        cert = v.issue_for_chain_state(cs, _rng(31))
+        wire = cert.to_wire_dict()
+
+        monkeypatch.setattr(chain_api_mod, "fetch_chain_state_evm", lambda *a, **k: cs)
+        with pytest.raises(ValueError, match="min_confirmations_behind_tip"):
+            verify_evm_state_certificate_via_rpc(
+                "https://eth.example.com",
+                "latest",
+                wire,
+                policy={"min_confirmations_behind_tip": "5"},
+            )
+
+    def test_cross_chain_via_rpc_src_not_dict(self):
+        k = _toy_key()
+        v = StateVerifier(k)
+        a = ChainState("eip155:1", 1, "0x" + "11" * 32)
+        b = ChainState("eip155:2", 2, "0x" + "22" * 32)
+        cert = v.issue_for_cross_chain(
+            CrossChainStateTransition(src=a, dst=b), _rng(32)
+        )
+        wire = cert.to_wire_dict()
+        with pytest.raises(ValueError, match="src and dst"):
+            verify_cross_chain_state_transition_via_rpc(
+                wire, src=[], dst={"rpc_url": "https://a.com"}
+            )
+
+    def test_cross_chain_via_rpc_missing_src_rpc(self):
+        k = _toy_key()
+        v = StateVerifier(k)
+        a = ChainState("eip155:1", 1, "0x" + "11" * 32)
+        b = ChainState("eip155:2", 2, "0x" + "22" * 32)
+        cert = v.issue_for_cross_chain(
+            CrossChainStateTransition(src=a, dst=b), _rng(33)
+        )
+        wire = cert.to_wire_dict()
+        with pytest.raises(ValueError, match="src.rpc_url"):
+            verify_cross_chain_state_transition_via_rpc(
+                wire,
+                src={"rpc_url": ""},
+                dst={"rpc_url": "https://b.example"},
+            )
+
+    def test_cross_chain_via_rpc_bad_src_block(self, monkeypatch):
+        k = _toy_key()
+        v = StateVerifier(k)
+        a = ChainState("eip155:1", 1, "0x" + "11" * 32)
+        b = ChainState("eip155:2", 2, "0x" + "22" * 32)
+        cert = v.issue_for_cross_chain(
+            CrossChainStateTransition(src=a, dst=b), _rng(34)
+        )
+        wire = cert.to_wire_dict()
+        with pytest.raises(ValueError, match="src.block"):
+            verify_cross_chain_state_transition_via_rpc(
+                wire,
+                src={"rpc_url": "https://a.example", "block": {}},
+                dst={"rpc_url": "https://b.example"},
+            )
+
+    def test_cross_chain_via_rpc_bad_caip2_type(self, monkeypatch):
+        k = _toy_key()
+        v = StateVerifier(k)
+        a = ChainState("eip155:1", 1, "0x" + "11" * 32)
+        b = ChainState("eip155:2", 2, "0x" + "22" * 32)
+        cert = v.issue_for_cross_chain(
+            CrossChainStateTransition(src=a, dst=b), _rng(35)
+        )
+        wire = cert.to_wire_dict()
+        with pytest.raises(ValueError, match="caip2_chain_id"):
+            verify_cross_chain_state_transition_via_rpc(
+                wire,
+                src={"rpc_url": "https://a.example", "caip2_chain_id": 1},
+                dst={"rpc_url": "https://b.example"},
+            )
+
+    def test_cross_chain_policy_src_not_object(self, monkeypatch):
+        k = _toy_key()
+        v = StateVerifier(k)
+        a = ChainState("eip155:1", 1, "0x" + "11" * 32)
+        b = ChainState("eip155:2", 2, "0x" + "22" * 32)
+        cert = v.issue_for_cross_chain(
+            CrossChainStateTransition(src=a, dst=b), _rng(36)
+        )
+        wire = cert.to_wire_dict()
+
+        def fake_fetch(url, *a, **k):
+            if "a.example" in url:
+                return a
+            return b
+
+        monkeypatch.setattr(chain_api_mod, "fetch_chain_state_evm", fake_fetch)
+        with pytest.raises(ValueError, match="policy.src"):
+            verify_cross_chain_state_transition_via_rpc(
+                wire,
+                src={"rpc_url": "https://a.example"},
+                dst={"rpc_url": "https://b.example"},
+                policy={"src": "bad"},
+            )
+
+    def test_cross_l1_cosmos_xrp_via_rpc(self, monkeypatch):
+        k = _toy_key()
+        v = StateVerifier(k)
+        c = CosmosCommitment("hub-4", 3, "0x" + "dd" * 32)
+        x = XrpLedgerCommitment("xrpl-t", 4, "0x" + "ee" * 32)
+        cert = v.issue_for_cross_l1(CrossL1Commitment(src=c, dst=x), _rng(37))
+        wire = cert.to_wire_dict()
+
+        monkeypatch.setattr(
+            chain_api_mod, "fetch_cosmos_commitment", lambda url, **kw: c
+        )
+        monkeypatch.setattr(
+            chain_api_mod, "fetch_xrp_ledger_commitment", lambda url, **kw: x
+        )
+        out = verify_cross_l1_commitment_via_rpc(
+            wire,
+            src={
+                "kind": "cosmos",
+                "rest_base": "https://lcd.example",
+                "chain_id": "hub-4",
+                "height": 3,
+            },
+            dst={
+                "kind": "xrp",
+                "rpc_url": "https://xrpl.example",
+                "network_id": "xrpl-t",
+                "ledger_index": 4,
+            },
+        )
+        assert out["ok"] is True
+
+    def test_cross_l1_bad_kind(self):
+        k = _toy_key()
+        v = StateVerifier(k)
+        ev = ChainState("eip155:1", 1, "0x" + "ff" * 32)
+        cert = v.issue_for_chain_state(ev, _rng(38))
+        wire = cert.to_wire_dict()
+        with pytest.raises(ValueError, match="kind"):
+            verify_cross_l1_commitment_via_rpc(
+                wire,
+                src={"kind": "tron", "rpc_url": "https://x.com", "block": "latest"},
+                dst={"kind": "evm", "rpc_url": "https://e.com", "block": "latest"},
+            )
+
+    def test_cross_l1_evm_bad_block_type(self):
+        k = _toy_key()
+        v = StateVerifier(k)
+        ev = ChainState("eip155:1", 1, "0x" + "ff" * 32)
+        cert = v.issue_for_chain_state(ev, _rng(39))
+        wire = cert.to_wire_dict()
+        with pytest.raises(ValueError, match="block"):
+            verify_cross_l1_commitment_via_rpc(
+                wire,
+                src={"kind": "evm", "rpc_url": "https://e.com", "block": []},
+                dst={"kind": "evm", "rpc_url": "https://e2.com", "block": "latest"},
+            )
+
+    def test_cross_l1_solana_bad_slot(self):
+        k = _toy_key()
+        v = StateVerifier(k)
+        s = SolanaCommitment("m", 1, "bh")
+        cert = v.issue_for_solana(s, _rng(40))
+        wire = cert.to_wire_dict()
+        with pytest.raises(ValueError, match="slot"):
+            verify_cross_l1_commitment_via_rpc(
+                wire,
+                src={
+                    "kind": "solana",
+                    "rpc_url": "https://sol.example",
+                    "slot": "nope",
+                },
+                dst={"kind": "solana", "rpc_url": "https://sol2.example"},
+            )
+
+    def test_cross_l1_cosmos_bad_height(self):
+        k = _toy_key()
+        v = StateVerifier(k)
+        c = CosmosCommitment("x", 1, "0x" + "ab" * 32)
+        cert = v.issue_for_cosmos(c, _rng(41))
+        wire = cert.to_wire_dict()
+        with pytest.raises(ValueError, match="height"):
+            verify_cross_l1_commitment_via_rpc(
+                wire,
+                src={
+                    "kind": "cosmos",
+                    "rest_base": "https://lcd.example",
+                    "chain_id": "x",
+                    "height": "latest",
+                },
+                dst={
+                    "kind": "cosmos",
+                    "rest_base": "https://lcd2.example",
+                    "chain_id": "x",
+                },
+            )
+
+    def test_cross_l1_xrp_bad_ledger_index(self):
+        k = _toy_key()
+        v = StateVerifier(k)
+        x = XrpLedgerCommitment("nid", 1, "0x" + "cd" * 32)
+        cert = v.issue_for_anchor(x, _rng(42))
+        wire = cert.to_wire_dict()
+        with pytest.raises(ValueError, match="ledger_index"):
+            verify_cross_l1_commitment_via_rpc(
+                wire,
+                src={
+                    "kind": "xrp",
+                    "rpc_url": "https://xrpl.example",
+                    "network_id": "nid",
+                    "ledger_index": {},
+                },
+                dst={
+                    "kind": "xrp",
+                    "rpc_url": "https://xrpl2.example",
+                    "network_id": "nid",
+                },
+            )

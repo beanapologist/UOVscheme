@@ -150,7 +150,9 @@ def _policy_evm_depth(
     if n is None:
         return
     if type(n) is not int or n < 0:
-        raise ValueError("policy.min_confirmations_behind_tip must be a non-negative int")
+        raise ValueError(
+            "policy.min_confirmations_behind_tip must be a non-negative int"
+        )
     enforce_evm_min_confirmations_behind_tip(rpc_url, state, n, timeout=timeout)
 
 
@@ -241,12 +243,8 @@ def verify_cross_chain_state_transition_via_rpc(
         timeout=timeout,
     )
     pol = policy if isinstance(policy, dict) else None
-    _policy_evm_depth(
-        s_url, src_state, _policy_leg_dict(pol, "src"), timeout=timeout
-    )
-    _policy_evm_depth(
-        d_url, dst_state, _policy_leg_dict(pol, "dst"), timeout=timeout
-    )
+    _policy_evm_depth(s_url, src_state, _policy_leg_dict(pol, "src"), timeout=timeout)
+    _policy_evm_depth(d_url, dst_state, _policy_leg_dict(pol, "dst"), timeout=timeout)
     return verify_cross_chain_state_transition_against_pair(
         certificate_wire, src_state, dst_state
     )
@@ -353,9 +351,7 @@ def verify_cross_l1_commitment_against_pair(
     cert = StateCertificate.from_wire_dict(certificate_wire)
     x = CrossL1Commitment(src=src, dst=dst)
     y_live = cross_l1_commitment_to_digest(cert.inner.q, cert.inner.o, x)
-    return _binding_report(
-        cert, y_live, "cross_l1_commitment", x.to_canonical_dict()
-    )
+    return _binding_report(cert, y_live, "cross_l1_commitment", x.to_canonical_dict())
 
 
 def verify_cross_l1_commitment_via_rpc(
