@@ -163,7 +163,7 @@ python -m pytest tests/ -v       # Full pytest suite
 
 Cross-ecosystem pairs use `CrossL1Commitment` + `issue_for_cross_l1`. Intra-chain stepping uses `issue_for_intra_solana` / `issue_for_intra_cosmos` (or existing EVM `issue_for_intra_chain`).
 
-**Chain verify API:** `python -m statecert.api_server` (from `impl/python`) — `POST /api/v1/evm|solana|cosmos|xrp/verify-state-cert` (server-side RPC + digest binding + UOV verify); see [`impl/python/statecert/README_CHAIN_API.md`](impl/python/statecert/README_CHAIN_API.md). The [`web/`](web/) UI can call it when the API URL is reachable (CORS defaults to `*`).
+**Chain verify API:** `python -m statecert.api_server` (from `impl/python`) — `POST /api/v1/evm/verify-state-cert` (optional `policy`), `…/evm/cross-verify-state-cert`, `…/cross-l1/verify-state-cert`, `…/solana|cosmos|xrp/verify-state-cert`, plus `GET /api/v1/health`; see [`impl/python/statecert/README_CHAIN_API.md`](impl/python/statecert/README_CHAIN_API.md). The [`web/`](web/) UI exposes these modes when the API URL is reachable (CORS defaults to `*`).
 
 **On-chain posting / verifier options:** see [`contracts/README.md`](contracts/README.md) — EVM registry `contracts/evm/SilentVerifyAnchorRegistry.sol` (`postFullWire` vs `postCommitmentOnly`), plus Solana / Cosmwasm notes under `programs/silentverify/` and `contracts/cosmos/`. Full UOV verification on-chain at production parameters is expected to use optimistic, SNARK, or oracle patterns rather than naive bytecode.
 

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="SilentVerify — in-browser UOV state certificate generator and verifier (WASM), plus chain API tools."
+      content="SilentVerify — WASM certificate demo, JSON verify, chain API, and Lean-formalized UOV core (UOVscheme/)."
     />
     <title>SilentVerify — certificate generator</title>
     <link rel="stylesheet" href="styles.css" />
@@ -24,6 +24,11 @@
       <p class="tagline">
         Portable <strong>state certificates</strong>: bind a digest to chain roots (or other anchors),
         sign with UOV, verify with one public check — <code>P(σ) = y</code>.
+      </p>
+      <p class="hero-proof">
+        <strong>Formally verified in Lean&nbsp;4</strong> — the cryptographic core is mechanized in
+        <a href="https://github.com/beanapologist/UOVscheme/tree/main/UOVscheme"><code>UOVscheme/</code></a>
+        (scheme correctness and related proofs; build with <code>lake build</code> in the repo root).
       </p>
       <p class="meta">
         <a href="https://github.com/beanapologist/UOVscheme">UOVscheme on GitHub</a>
@@ -119,11 +124,14 @@
 
       <div id="panel-api" class="tab-panel hidden" role="tabpanel">
         <section class="card card-flush">
-          <h2>Match certificate to live chain (server API)</h2>
+          <h2>Chain verify (Python API)</h2>
           <p class="hint">
-            Run <code>python -m statecert.api_server</code> in <code>impl/python</code>, then set the URL below. The
-            cert must come from Python <code>StateVerifier.issue_for_*</code> (chain digest path), not the WASM message
-            demo.
+            Run <code>python -m statecert.api_server</code> in <code>impl/python</code>, set the base URL below, then pick a
+            verify mode. Covers all POST routes:
+            <code>/api/v1/evm/verify-state-cert</code> (optional <code>policy</code>),
+            <code>…/evm/cross-verify-state-cert</code>, <code>…/cross-l1/verify-state-cert</code>,
+            <code>…/solana|cosmos|xrp/verify-state-cert</code>, and <code>GET …/health</code>.
+            Certs must come from Python <code>StateVerifier.issue_for_*</code>, not the WASM message demo.
           </p>
           <p class="hint hint-tight" id="apiHttpsNote" hidden>
             This page is <strong>HTTPS</strong> (for example GitHub Pages). Browsers block calls to
@@ -138,15 +146,17 @@
             placeholder="http://127.0.0.1:8765"
             autocomplete="off"
           />
-          <label for="apiChainKind">Chain type</label>
+          <label for="apiChainKind">Verify mode</label>
           <select id="apiChainKind" aria-describedby="apiChainHelp">
-            <option value="evm" selected>Ethereum / EVM (block + state root)</option>
-            <option value="solana">Solana (slot + blockhash)</option>
-            <option value="cosmos">Cosmos (LCD block)</option>
-            <option value="xrp">XRP Ledger (ledger hash)</option>
+            <option value="evm" selected>EVM — single anchor</option>
+            <option value="evm-cross">EVM + EVM — cross transition (two ChainState)</option>
+            <option value="cross-l1">Cross-L1 — two legs (evm / solana / cosmos / xrp)</option>
+            <option value="solana">Solana — slot + blockhash</option>
+            <option value="cosmos">Cosmos — LCD block</option>
+            <option value="xrp">XRP Ledger — ledger hash</option>
           </select>
           <p id="apiChainHelp" class="hint hint-tight">
-            Fields below change when you change chain type.
+            Matches Python <code>statecert.api_server</code> routes. Fields below follow the mode you pick.
           </p>
 
           <div id="apiFieldsEvm" class="api-chain-fields">
@@ -156,6 +166,163 @@
             <input id="apiBlock" type="text" value="latest" placeholder="latest or block number" />
             <label for="apiCaip2">CAIP-2 id (optional)</label>
             <input id="apiCaip2" type="text" placeholder="e.g. eip155:1 — leave blank to use node chainId" />
+            <details class="advanced api-policy-details">
+              <summary>EVM policy (optional)</summary>
+              <label for="apiEvmMinDepth">Min confirmations behind tip</label>
+              <input
+                id="apiEvmMinDepth"
+                type="number"
+                min="0"
+                placeholder="omit to skip"
+                inputmode="numeric"
+                autocomplete="off"
+              />
+              <p class="hint hint-tight">
+                Server calls <code>eth_blockNumber</code> on the same RPC and requires <code>tip − block ≥ N</code>.
+              </p>
+            </details>
+          </div>
+
+          <div id="apiFieldsEvmCross" class="api-chain-fields hidden">
+            <p class="hint hint-tight">
+              For certs from <code>issue_for_cross_chain</code> (not <code>CrossL1Commitment</code>). POST
+              <code>/api/v1/evm/cross-verify-state-cert</code>.
+            </p>
+            <h3 class="api-subhead">Source (EVM)</h3>
+            <label for="apiCrossSrcRpc">JSON-RPC URL</label>
+            <input id="apiCrossSrcRpc" type="url" spellcheck="false" placeholder="https://rpc.ankr.com/eth" autocomplete="off" />
+            <label for="apiCrossSrcBlock">Block</label>
+            <input id="apiCrossSrcBlock" type="text" value="latest" />
+            <label for="apiCrossSrcCaip2">CAIP-2 (optional)</label>
+            <input id="apiCrossSrcCaip2" type="text" placeholder="eip155:1" />
+            <h3 class="api-subhead">Destination (EVM)</h3>
+            <label for="apiCrossDstRpc">JSON-RPC URL</label>
+            <input id="apiCrossDstRpc" type="url" spellcheck="false" placeholder="https://rpc.ankr.com/arbitrum" autocomplete="off" />
+            <label for="apiCrossDstBlock">Block</label>
+            <input id="apiCrossDstBlock" type="text" value="latest" />
+            <label for="apiCrossDstCaip2">CAIP-2 (optional)</label>
+            <input id="apiCrossDstCaip2" type="text" placeholder="" />
+            <details class="advanced api-policy-details">
+              <summary>Per-leg EVM depth policy (optional)</summary>
+              <div class="grid-params">
+                <div>
+                  <label for="apiCrossPolSrcDepth">Source min conf.</label>
+                  <input id="apiCrossPolSrcDepth" type="number" min="0" placeholder="omit" inputmode="numeric" />
+                </div>
+                <div>
+                  <label for="apiCrossPolDstDepth">Dest min conf.</label>
+                  <input id="apiCrossPolDstDepth" type="number" min="0" placeholder="omit" inputmode="numeric" />
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <div id="apiFieldsCrossL1" class="api-chain-fields hidden">
+            <p class="hint hint-tight">
+              For certs from <code>issue_for_cross_l1</code>. POST <code>/api/v1/cross-l1/verify-state-cert</code>. Each leg
+              has a <code>kind</code>; only EVM legs use depth policy below.
+            </p>
+            <fieldset class="api-l1-fieldset">
+              <legend>Source leg</legend>
+              <label for="apiL1SrcKind">Kind</label>
+              <select id="apiL1SrcKind" aria-label="Cross-L1 source kind">
+                <option value="evm" selected>evm</option>
+                <option value="solana">solana</option>
+                <option value="cosmos">cosmos</option>
+                <option value="xrp">xrp</option>
+              </select>
+              <div id="apiL1SrcFieldsEvm" class="api-l1-variant">
+                <label for="apiL1SrcEvmRpc">JSON-RPC URL</label>
+                <input id="apiL1SrcEvmRpc" type="url" spellcheck="false" placeholder="https://ethereum.publicnode.com" />
+                <label for="apiL1SrcEvmBlock">Block</label>
+                <input id="apiL1SrcEvmBlock" type="text" value="finalized" />
+                <label for="apiL1SrcEvmCaip2">CAIP-2 (optional)</label>
+                <input id="apiL1SrcEvmCaip2" type="text" placeholder="eip155:1" />
+              </div>
+              <div id="apiL1SrcFieldsSolana" class="api-l1-variant hidden">
+                <label for="apiL1SrcSolRpc">RPC URL</label>
+                <input id="apiL1SrcSolRpc" type="url" spellcheck="false" placeholder="https://api.mainnet-beta.solana.com" />
+                <label for="apiL1SrcSolCluster">Cluster</label>
+                <input id="apiL1SrcSolCluster" type="text" value="mainnet-beta" />
+                <label for="apiL1SrcSolSlot">Slot (optional)</label>
+                <input id="apiL1SrcSolSlot" type="text" placeholder="omit for head" inputmode="numeric" />
+                <label for="apiL1SrcSolCommit">Commitment</label>
+                <input id="apiL1SrcSolCommit" type="text" value="finalized" />
+              </div>
+              <div id="apiL1SrcFieldsCosmos" class="api-l1-variant hidden">
+                <label for="apiL1SrcCosRest">REST base</label>
+                <input id="apiL1SrcCosRest" type="url" spellcheck="false" placeholder="https://lcd-cosmoshub.keplr.app" />
+                <label for="apiL1SrcCosChainId">chain_id</label>
+                <input id="apiL1SrcCosChainId" type="text" placeholder="cosmoshub-4" />
+                <label for="apiL1SrcCosHeight">Height (optional)</label>
+                <input id="apiL1SrcCosHeight" type="text" placeholder="latest if empty" inputmode="numeric" />
+              </div>
+              <div id="apiL1SrcFieldsXrp" class="api-l1-variant hidden">
+                <label for="apiL1SrcXrpRpc">JSON-RPC URL</label>
+                <input id="apiL1SrcXrpRpc" type="url" spellcheck="false" placeholder="https://s1.ripple.com" />
+                <label for="apiL1SrcXrpNetworkId">network_id</label>
+                <input id="apiL1SrcXrpNetworkId" type="text" placeholder="xrpl-mainnet" />
+                <label for="apiL1SrcXrpLedger">ledger_index</label>
+                <input id="apiL1SrcXrpLedger" type="text" value="validated" />
+              </div>
+            </fieldset>
+            <fieldset class="api-l1-fieldset">
+              <legend>Destination leg</legend>
+              <label for="apiL1DstKind">Kind</label>
+              <select id="apiL1DstKind" aria-label="Cross-L1 destination kind">
+                <option value="evm">evm</option>
+                <option value="solana" selected>solana</option>
+                <option value="cosmos">cosmos</option>
+                <option value="xrp">xrp</option>
+              </select>
+              <div id="apiL1DstFieldsEvm" class="api-l1-variant hidden">
+                <label for="apiL1DstEvmRpc">JSON-RPC URL</label>
+                <input id="apiL1DstEvmRpc" type="url" spellcheck="false" placeholder="https://rpc.ankr.com/eth" />
+                <label for="apiL1DstEvmBlock">Block</label>
+                <input id="apiL1DstEvmBlock" type="text" value="latest" />
+                <label for="apiL1DstEvmCaip2">CAIP-2 (optional)</label>
+                <input id="apiL1DstEvmCaip2" type="text" placeholder="" />
+              </div>
+              <div id="apiL1DstFieldsSolana" class="api-l1-variant">
+                <label for="apiL1DstSolRpc">RPC URL</label>
+                <input id="apiL1DstSolRpc" type="url" spellcheck="false" placeholder="https://api.mainnet-beta.solana.com" />
+                <label for="apiL1DstSolCluster">Cluster</label>
+                <input id="apiL1DstSolCluster" type="text" value="mainnet-beta" />
+                <label for="apiL1DstSolSlot">Slot (optional)</label>
+                <input id="apiL1DstSolSlot" type="text" placeholder="" inputmode="numeric" />
+                <label for="apiL1DstSolCommit">Commitment</label>
+                <input id="apiL1DstSolCommit" type="text" value="finalized" />
+              </div>
+              <div id="apiL1DstFieldsCosmos" class="api-l1-variant hidden">
+                <label for="apiL1DstCosRest">REST base</label>
+                <input id="apiL1DstCosRest" type="url" spellcheck="false" placeholder="https://lcd-cosmoshub.keplr.app" />
+                <label for="apiL1DstCosChainId">chain_id</label>
+                <input id="apiL1DstCosChainId" type="text" placeholder="cosmoshub-4" />
+                <label for="apiL1DstCosHeight">Height (optional)</label>
+                <input id="apiL1DstCosHeight" type="text" placeholder="" inputmode="numeric" />
+              </div>
+              <div id="apiL1DstFieldsXrp" class="api-l1-variant hidden">
+                <label for="apiL1DstXrpRpc">JSON-RPC URL</label>
+                <input id="apiL1DstXrpRpc" type="url" spellcheck="false" placeholder="https://s1.ripple.com" />
+                <label for="apiL1DstXrpNetworkId">network_id</label>
+                <input id="apiL1DstXrpNetworkId" type="text" placeholder="xrpl-mainnet" />
+                <label for="apiL1DstXrpLedger">ledger_index</label>
+                <input id="apiL1DstXrpLedger" type="text" value="validated" />
+              </div>
+            </fieldset>
+            <details class="advanced api-policy-details">
+              <summary>Per-leg EVM depth policy (optional)</summary>
+              <div class="grid-params">
+                <div>
+                  <label for="apiL1PolSrcDepth">Source min conf. (if src is evm)</label>
+                  <input id="apiL1PolSrcDepth" type="number" min="0" placeholder="omit" inputmode="numeric" />
+                </div>
+                <div>
+                  <label for="apiL1PolDstDepth">Dest min conf. (if dst is evm)</label>
+                  <input id="apiL1PolDstDepth" type="number" min="0" placeholder="omit" inputmode="numeric" />
+                </div>
+              </div>
+            </details>
           </div>
 
           <div id="apiFieldsSolana" class="api-chain-fields hidden">
@@ -195,6 +362,7 @@
 
           <div class="row row-actions">
             <button type="button" id="btnApiVerify">Run verify</button>
+            <button type="button" id="btnApiHealth" class="secondary">Ping API (GET /api/v1/health)</button>
           </div>
           <pre id="apiOut" class="out out-tight" aria-live="polite"></pre>
         </section>
@@ -213,6 +381,11 @@
           <a href="https://github.com/beanapologist/UOVscheme/blob/main/impl/python/statecert/README_CHAIN_API.md"
             >README_CHAIN_API.md</a
           >
+          (all verify routes + <code>GET /api/v1/health</code>).
+        </p>
+        <p>
+          EVM on-chain anchor registry (optional, separate from this API):
+          <code>contracts/evm/SilentVerifyAnchorRegistry.sol</code>
         </p>
       </details>
     </footer>

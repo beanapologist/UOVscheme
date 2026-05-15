@@ -14,6 +14,8 @@ Environment:
 Routes:
 
 * ``POST /api/v1/evm/verify-state-cert``
+* ``POST /api/v1/evm/cross-verify-state-cert`` — two EVM legs → ``CrossChainStateTransition``
+* ``POST /api/v1/cross-l1/verify-state-cert`` — two heterogeneous legs → ``CrossL1Commitment``
 * ``POST /api/v1/solana/verify-state-cert``
 * ``POST /api/v1/cosmos/verify-state-cert``
 * ``POST /api/v1/xrp/verify-state-cert``
@@ -29,6 +31,8 @@ from typing import Any, Dict, Optional, Tuple
 
 from .chain_api import (
     verify_cosmos_state_certificate_via_rest,
+    verify_cross_chain_state_transition_via_rpc,
+    verify_cross_l1_commitment_via_rpc,
     verify_evm_state_certificate_via_rpc,
     verify_solana_state_certificate_via_rpc,
     verify_xrp_state_certificate_via_rpc,
@@ -117,6 +121,10 @@ class _Handler(BaseHTTPRequestHandler):
 
         if path == "/api/v1/evm/verify-state-cert":
             return self._post_evm(body)
+        if path == "/api/v1/evm/cross-verify-state-cert":
+            return self._post_evm_cross(body)
+        if path == "/api/v1/cross-l1/verify-state-cert":
+            return self._post_cross_l1(body)
         if path == "/api/v1/solana/verify-state-cert":
             return self._post_solana(body)
         if path == "/api/v1/cosmos/verify-state-cert":
@@ -141,6 +149,9 @@ class _Handler(BaseHTTPRequestHandler):
         caip2 = body.get("caip2_chain_id")
         if caip2 is not None and not isinstance(caip2, str):
             return _send_json(self, 400, {"error": "caip2_chain_id_must_be_string"})
+        policy = body.get("policy")
+        if policy is not None and not isinstance(policy, dict):
+            return _send_json(self, 400, {"error": "policy_must_be_object_or_omitted"})
         try:
             timeout = float(body.get("timeout", 30.0))
         except (TypeError, ValueError):
@@ -151,6 +162,75 @@ class _Handler(BaseHTTPRequestHandler):
                 block,
                 cert,
                 caip2_chain_id=caip2,
+                policy=policy,
+                timeout=timeout,
+            )
+        except ValueError as e:
+            return _send_json(
+                self, 400, {"error": "validation_error", "detail": str(e)}
+            )
+        except (OSError, RuntimeError) as e:
+            return _send_json(self, 502, {"error": "rpc_or_schema", "detail": str(e)})
+        return _send_json(self, 200, {"result": result})
+
+    def _post_evm_cross(self, body: Dict[str, Any]) -> None:
+        cert, cerr = _require_cert(body)
+        if cerr:
+            return _send_json(self, 400, {"error": cerr})
+        assert cert is not None
+        src = body.get("src")
+        dst = body.get("dst")
+        if not isinstance(src, dict):
+            return _send_json(self, 400, {"error": "missing_src_object"})
+        if not isinstance(dst, dict):
+            return _send_json(self, 400, {"error": "missing_dst_object"})
+        policy = body.get("policy")
+        if policy is not None and not isinstance(policy, dict):
+            return _send_json(self, 400, {"error": "policy_must_be_object_or_omitted"})
+        try:
+            timeout = float(body.get("timeout", 30.0))
+        except (TypeError, ValueError):
+            return _send_json(self, 400, {"error": "timeout_must_be_number"})
+        try:
+            result = verify_cross_chain_state_transition_via_rpc(
+                cert,
+                src=src,
+                dst=dst,
+                policy=policy,
+                timeout=timeout,
+            )
+        except ValueError as e:
+            return _send_json(
+                self, 400, {"error": "validation_error", "detail": str(e)}
+            )
+        except (OSError, RuntimeError) as e:
+            return _send_json(self, 502, {"error": "rpc_or_schema", "detail": str(e)})
+        return _send_json(self, 200, {"result": result})
+
+    def _post_cross_l1(self, body: Dict[str, Any]) -> None:
+        cert, cerr = _require_cert(body)
+        if cerr:
+            return _send_json(self, 400, {"error": cerr})
+        assert cert is not None
+        src = body.get("src")
+        dst = body.get("dst")
+        if not isinstance(src, dict):
+            return _send_json(self, 400, {"error": "missing_src_object"})
+        if not isinstance(dst, dict):
+            return _send_json(self, 400, {"error": "missing_dst_object"})
+        policy = body.get("policy")
+        if policy is not None and not isinstance(policy, dict):
+            return _send_json(self, 400, {"error": "policy_must_be_object_or_omitted"})
+        try:
+            timeout = float(body.get("timeout", 30.0))
+        except (TypeError, ValueError):
+            return _send_json(self, 400, {"error": "timeout_must_be_number"})
+        try:
+            result = verify_cross_l1_commitment_via_rpc(
+                cert,
+                src=src,
+                dst=dst,
+                policy=policy,
                 timeout=timeout,
             )
         except ValueError as e:
@@ -276,7 +356,8 @@ def main() -> None:
     httpd = ThreadingHTTPServer((host, port), _Handler)
     print(f"SilentVerify chain API on http://{host}:{port}", file=sys.stderr)
     print(
-        "POST /api/v1/evm|solana|cosmos|xrp/verify-state-cert",
+        "POST /api/v1/evm/verify-state-cert, /api/v1/evm/cross-verify-state-cert, "
+        "/api/v1/cross-l1/verify-state-cert, solana, cosmos, xrp",
         file=sys.stderr,
     )
     try:

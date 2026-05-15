@@ -102,7 +102,7 @@ $("btnGenerate").addEventListener("click", () => {
     setOut(
       out,
       "ok",
-      "Certificate generated. JSON is in the “Certificate JSON” tab (switched for you). You can verify or copy it there.",
+      "Certificate generated. JSON is in “View / verify JSON” (switched for you). Use Chain verify (API) for Python-issued chain certs.",
     );
     switchTab("panel-cert");
     $("certIn").focus();
@@ -209,20 +209,39 @@ function parseXrpLedgerIndex(s) {
 
 const API_PANELS = {
   evm: "apiFieldsEvm",
+  "evm-cross": "apiFieldsEvmCross",
+  "cross-l1": "apiFieldsCrossL1",
   solana: "apiFieldsSolana",
   cosmos: "apiFieldsCosmos",
   xrp: "apiFieldsXrp",
 };
+
+const CROSS_L1_FIELD_SUFFIX = { evm: "Evm", solana: "Solana", cosmos: "Cosmos", xrp: "Xrp" };
+
+function syncApiCrossL1Panels() {
+  for (const leg of ["src", "dst"]) {
+    const cap = leg === "src" ? "Src" : "Dst";
+    const k = $(`apiL1${cap}Kind`).value;
+    for (const [vk, suf] of Object.entries(CROSS_L1_FIELD_SUFFIX)) {
+      const panel = $(`apiL1${cap}Fields${suf}`);
+      if (panel) panel.classList.toggle("hidden", k !== vk);
+    }
+  }
+}
 
 function syncApiChainPanels() {
   const k = $("apiChainKind").value;
   for (const [key, id] of Object.entries(API_PANELS)) {
     $(id).classList.toggle("hidden", key !== k);
   }
+  if (k === "cross-l1") syncApiCrossL1Panels();
 }
 
 $("apiChainKind").addEventListener("change", syncApiChainPanels);
+$("apiL1SrcKind").addEventListener("change", syncApiCrossL1Panels);
+$("apiL1DstKind").addEventListener("change", syncApiCrossL1Panels);
 syncApiChainPanels();
+syncApiCrossL1Panels();
 
 function summarizeApiPayload(data) {
   if (!data || typeof data !== "object" || data.result == null) return "";
@@ -236,7 +255,102 @@ function summarizeApiPayload(data) {
   if (typeof r.certificate_crypto_ok === "boolean") {
     parts.push(r.certificate_crypto_ok ? "UOV verify OK." : "UOV verify failed.");
   }
+  if (typeof r.certificate_full_ok === "boolean" && !r.certificate_full_ok) {
+    parts.push("pubkey_fp mismatch or crypto failed (see certificate_full_ok).");
+  }
+  const anchorKeys = [
+    "chain_state",
+    "cross_chain_state_transition",
+    "cross_l1_commitment",
+    "solana_commitment",
+    "cosmos_commitment",
+    "xrp_ledger_commitment",
+  ];
+  for (const k of anchorKeys) {
+    if (r[k] != null) {
+      parts.push(`Anchor field: ${k}`);
+      break;
+    }
+  }
   return `${parts.join(" ")}\n\n`;
+}
+
+function optionalEvmPolicyFromInput(inputId) {
+  const raw = $(inputId).value.trim();
+  if (raw === "") return undefined;
+  const n = parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 0) {
+    throw new Error("Min confirmations: use a non-negative integer or leave empty.");
+  }
+  if (n === 0) return undefined;
+  return { min_confirmations_behind_tip: n };
+}
+
+function optionalPolicySrcDst(srcInputId, dstInputId) {
+  const a = optionalEvmPolicyFromInput(srcInputId);
+  const b = optionalEvmPolicyFromInput(dstInputId);
+  const pol = {};
+  if (a) pol.src = a;
+  if (b) pol.dst = b;
+  return Object.keys(pol).length ? pol : undefined;
+}
+
+function buildCrossL1Leg(side) {
+  const cap = side === "src" ? "Src" : "Dst";
+  const kind = $(`apiL1${cap}Kind`).value;
+  if (kind === "evm") {
+    const rpc = $(`apiL1${cap}EvmRpc`).value.trim();
+    if (!rpc) throw new Error(`${side} (evm): JSON-RPC URL required.`);
+    const body = {
+      kind: "evm",
+      rpc_url: rpc,
+      block: parseBlockArg($(`apiL1${cap}EvmBlock`).value),
+    };
+    const c2 = $(`apiL1${cap}EvmCaip2`).value.trim();
+    if (c2) body.caip2_chain_id = c2;
+    return body;
+  }
+  if (kind === "solana") {
+    const rpc = $(`apiL1${cap}SolRpc`).value.trim();
+    if (!rpc) throw new Error(`${side} (solana): RPC URL required.`);
+    const body = {
+      kind: "solana",
+      rpc_url: rpc,
+      cluster_id: $(`apiL1${cap}SolCluster`).value.trim() || "mainnet-beta",
+      commitment: $(`apiL1${cap}SolCommit`).value.trim() || "finalized",
+    };
+    const slotRaw = $(`apiL1${cap}SolSlot`).value.trim();
+    if (slotRaw) {
+      const s = parseInt(slotRaw, 10);
+      if (!Number.isFinite(s)) throw new Error(`${side} (solana): slot must be a number.`);
+      body.slot = s;
+    }
+    return body;
+  }
+  if (kind === "cosmos") {
+    const rest = $(`apiL1${cap}CosRest`).value.trim();
+    const cid = $(`apiL1${cap}CosChainId`).value.trim();
+    if (!rest) throw new Error(`${side} (cosmos): REST base required.`);
+    if (!cid) throw new Error(`${side} (cosmos): chain_id required.`);
+    const body = { kind: "cosmos", rest_base: rest, chain_id: cid };
+    const hRaw = $(`apiL1${cap}CosHeight`).value.trim();
+    if (hRaw) {
+      const h = parseInt(hRaw, 10);
+      if (!Number.isFinite(h)) throw new Error(`${side} (cosmos): height must be a number.`);
+      body.height = h;
+    }
+    return body;
+  }
+  const rpc = $(`apiL1${cap}XrpRpc`).value.trim();
+  const nid = $(`apiL1${cap}XrpNetworkId`).value.trim();
+  if (!rpc) throw new Error(`${side} (xrp): JSON-RPC URL required.`);
+  if (!nid) throw new Error(`${side} (xrp): network_id required.`);
+  return {
+    kind: "xrp",
+    rpc_url: rpc,
+    network_id: nid,
+    ledger_index: parseXrpLedgerIndex($(`apiL1${cap}XrpLedger`).value),
+  };
 }
 
 async function postChainApi(path, body, outEl) {
@@ -306,7 +420,43 @@ $("btnApiVerify").addEventListener("click", async () => {
       };
       const caip2 = $("apiCaip2").value.trim();
       if (caip2) body.caip2_chain_id = caip2;
+      const pol = optionalEvmPolicyFromInput("apiEvmMinDepth");
+      if (pol) body.policy = pol;
       await postChainApi("/api/v1/evm/verify-state-cert", body, out);
+      return;
+    }
+    if (kind === "evm-cross") {
+      const sRpc = $("apiCrossSrcRpc").value.trim();
+      const dRpc = $("apiCrossDstRpc").value.trim();
+      if (!sRpc || !dRpc) {
+        setOut(out, "err", "Set JSON-RPC URLs for both EVM legs.");
+        return;
+      }
+      const src = {
+        rpc_url: sRpc,
+        block: parseBlockArg($("apiCrossSrcBlock").value),
+      };
+      const sCa = $("apiCrossSrcCaip2").value.trim();
+      if (sCa) src.caip2_chain_id = sCa;
+      const dst = {
+        rpc_url: dRpc,
+        block: parseBlockArg($("apiCrossDstBlock").value),
+      };
+      const dCa = $("apiCrossDstCaip2").value.trim();
+      if (dCa) dst.caip2_chain_id = dCa;
+      const body = { certificate: certObj, src, dst };
+      const xpol = optionalPolicySrcDst("apiCrossPolSrcDepth", "apiCrossPolDstDepth");
+      if (xpol) body.policy = xpol;
+      await postChainApi("/api/v1/evm/cross-verify-state-cert", body, out);
+      return;
+    }
+    if (kind === "cross-l1") {
+      const src = buildCrossL1Leg("src");
+      const dst = buildCrossL1Leg("dst");
+      const body = { certificate: certObj, src, dst };
+      const l1pol = optionalPolicySrcDst("apiL1PolSrcDepth", "apiL1PolDstDepth");
+      if (l1pol) body.policy = l1pol;
+      await postChainApi("/api/v1/cross-l1/verify-state-cert", body, out);
       return;
     }
     if (kind === "solana") {
@@ -377,7 +527,7 @@ $("btnApiVerify").addEventListener("click", async () => {
       await postChainApi("/api/v1/xrp/verify-state-cert", body, out);
       return;
     }
-    setOut(out, "err", "Unknown chain type.");
+    setOut(out, "err", "Unknown verify mode.");
   } catch (e) {
     const msg = e?.message ?? String(e);
     let hint = "";
@@ -397,5 +547,32 @@ $("btnApiVerify").addEventListener("click", async () => {
   } finally {
     btn.disabled = false;
     btn.textContent = prevLabel;
+  }
+});
+
+$("btnApiHealth").addEventListener("click", async () => {
+  const out = $("apiOut");
+  const base = $("apiBase").value.trim().replace(/\/$/, "");
+  if (!base) {
+    setOut(out, "err", "Set API base URL first.");
+    return;
+  }
+  try {
+    const res = await fetch(`${base}/api/v1/health`);
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      setOut(out, "err", `Non-JSON (HTTP ${res.status}): ${text.slice(0, 400)}`);
+      return;
+    }
+    if (!res.ok) {
+      setOut(out, "err", JSON.stringify(data, null, 2));
+      return;
+    }
+    setOut(out, "ok", `GET /api/v1/health OK\n\n${JSON.stringify(data, null, 2)}`);
+  } catch (e) {
+    setOut(out, "err", e?.message ?? String(e));
   }
 });

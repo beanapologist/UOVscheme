@@ -22,7 +22,7 @@ The static site can call a small Python server that fetches EVM state over JSON-
 cd impl/python && python -m statecert.api_server
 ```
 
-Then open the **Chain verify (API)** section on the site (same origin or set `SILENTVERIFY_CORS_ORIGIN`).
+Then open **Chain verify (API)** on the site: single EVM (with optional depth policy), EVM+EVM cross, Cross-L1 (any pair of evm/solana/cosmos/xrp legs), Solana, Cosmos, XRPL, plus **Ping API** for `GET /api/v1/health`.
 
 **GitHub Pages** serves the mini-site over **HTTPS**. The browser will block `http://127.0.0.1` (mixed content). Either open the site over plain HTTP locally (`python3 -m http.server` in `web/`) with the API on `http://127.0.0.1:8765`, or put the API behind **HTTPS** and paste that base URL (with CORS allowing your Pages origin).
 
