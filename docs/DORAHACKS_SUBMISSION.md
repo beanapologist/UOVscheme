@@ -11,6 +11,8 @@
 
 **Alternate BUIDL “Details” narrative (Alice / Bob / Eve):** [DORAHACKS_BUIDL_ALICE_BOB_EVE.md](DORAHACKS_BUIDL_ALICE_BOB_EVE.md) — paste-friendly for DoraHacks.
 
+**NIST PQC context & benchmarks:** [PQC_NIST_AND_BENCHMARKS.md](PQC_NIST_AND_BENCHMARKS.md) — main Round 3 → FIPS 204/205/206; **UOV in Additional Signatures Round 3** ([news](https://csrc.nist.gov/News/2026/nist-advances-9-candidates-to-the-3rd-round-of-pqc), [IR 8610 PDF](https://nvlpubs.nist.gov/nistpubs/ir/2026/NIST.IR.8610.pdf)); byte sizes, gas, prime-field bench script.
+
 ---
 
 ## Elevator pitch
@@ -73,6 +75,18 @@ CRT (`CRTBridge.lean`) is a **lossless** “two moduli, one class” isomorphism
 
 - **Python** (`impl/python/uov/`): reference UOV + **JSON certificate** issuance/verification (`certificate.py`), tests in `impl/python/tests/`.
 - **Rust / C++**: existing reference implementations (see `README.md`).
+
+### NIST landscape & performance (reviewer cheat sheet)
+
+| | ML-DSA (Dilithium) | FN-DSA (Falcon) | SLH-DSA (SPHINCS+) | UOV (`OV-Ip` / `OV-III`) |
+|--|---------------------|-----------------|---------------------|---------------------------|
+| NIST track | Main R3 → **FIPS 204** | Main R3 → **FIPS 206** | Main R3 → **FIPS 205** | **Additional sigs R3** ([May 2026](https://csrc.nist.gov/News/2026/nist-advances-9-candidates-to-the-3rd-round-of-pqc)) |
+| Typical |σ| (cat 1 / 3) | 2,420 / 3,309 B | 666 B (cat 1) | 7,856 / 16,224 B (SHA2-*s*) | **128 / 200 B** |
+| Typical |pk| | ~1.3 / ~2.0 KB | ~0.9 KB (cat 1) | 32 / 48 B (+ huge σ) | **~272 KB / ~1.2 MB** (classic) |
+| SilentVerify verify | N/A (not our primitive) | N/A | N/A | **One** public map eval **P(σ)=y** |
+| On-chain (this repo) | EIP-8051 precompile (draft) | R&D | R&D | **Anchor hash only** — see [PQC_NIST_AND_BENCHMARKS.md](PQC_NIST_AND_BENCHMARKS.md) |
+
+Full tables, CPU script, and gas discussion: **[PQC_NIST_AND_BENCHMARKS.md](PQC_NIST_AND_BENCHMARKS.md)**.
 
 ---
 

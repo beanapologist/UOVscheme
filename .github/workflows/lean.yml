@@ -30,7 +30,7 @@ jobs:
           if grep -rEn "(^|[[:space:]]|:=)[[:space:]]*sorry[[:space:]]*($|--)" \
                UOVscheme/ --include="*.lean" \
                | grep -v "^Binary file" \
-               | grep -v "MQ_hardness_assumption\|uov_reduces_to_mq\|PPT\|MQ\.hard\|UOV\.advantage"; then
+               | grep -v "MQ_hardness_assumption\|uov_reduces_to_mq\|MQ\.hard\|UOV\.advantage"; then
             echo "Unexpected sorry found — see above." >&2
             exit 1
           fi

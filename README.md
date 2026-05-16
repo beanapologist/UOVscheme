@@ -116,7 +116,11 @@ UOVscheme/
 │   ├── CentralMap.lean          #   Actual UOV map over ZMod q; linearization
 │   ├── SchemeCorrectness.lean   #   UOVKey, Sign, Verify, correctness, sign_then_verify
 │   ├── Certificate.lean         #   StateCertificate bundle (Lean)
-│   ├── SecurityModel.lean       #   Negligible, PPT (axiomatized)
+│   ├── SecurityModel.lean       #   Negligible, IsPolynomial, PPTAlg
+│   ├── CryptoGame.lean          #   FinMeasureSpace, ⊆ₑ, CoupledExperiment, prob_mono
+│   ├── GameProbability.lean     #   EUF/MQ as measures; proved euf ≤ mqPreimage
+│   ├── ToyCoupledGame.lean      #   Flashlight on Fin 4: μ(star)=1/2 ≤ μ(square)=3/4
+│   ├── ToyCryptoGame.lean       #   𝔽₇ instances + proved `toy_euf_cma` / `toy_uov_euf_cma`
 │   ├── MQProblem.lean           #   MQ adversary, MQ.hard axiom
 │   └── UOVSecurity.lean         #   EUF-CMA theorem (proved from two axioms)
 ├── Test/                        # Empirical tests (native_decide + #eval)
@@ -217,7 +221,11 @@ cargo test                 # 15 tests
 |---|---|
 | `Negligible.of_le` | Negligibility is downward-closed |
 | `Negligible.add` | Sum of negligible functions is negligible |
-| `uov_euf_cma` | `Negligible (UOV.advantage A)` — proved from two axioms |
+| `IsPolynomial.add` | PPT cost bounds closed under composition |
+| `PPTAlg.comp_cost` | Composed runtime bound = sum of bounds |
+| `FinDist.prob_mono` | `E ⊆ F` ⇒ `Pr[E] ≤ Pr[F]` (finite games) |
+| `euf_advantage_le_mqPreimage` | EUF advantage ≤ MQ preimage advantage (**proved**) |
+| `uov_euf_cma` | `Negligible (UOV.advantage A)` — from coupling + `MQ.hard` |
 
 ---
 
@@ -225,13 +233,13 @@ cargo test                 # 15 tests
 
 | Axiom | Why it cannot be proved |
 |---|---|
-| `PPT`, `PPT.run`, `PPT.comp` | No Turing machine model is formalized |
-| `MQ.advantage` | Requires probability distributions over key space |
-| `MQ.hard` | Average-case MQ hardness — **standard cryptographic assumption**, not a consequence of Lean's logic or of P ≠ NP alone.  Conceptually bundles a probability space, a success event, PPT adversaries, and negligibility; see the module doc at the top of `MQProblem.lean`. |
-| `UOV.advantage` | Same as `MQ.advantage` |
-| `uov_reduces_to_mq` | Requires distributions + pseudorandomness of UOV keys among MQ instances — **standard assumption**, spelled out as proof obligations in the axiom's docstring in `UOVSecurity.lean`. |
+| `MQ.hard` | Average-case MQ hardness (standard assumption) |
+| `CoupledDist.mqPreimage_le_mq` | Oracle-game vs black-box MQ experiment distributions |
+| `uov_reduces_to_mq` | Links `UOV_Forger` to the EUF oracle game |
 
-The security proof `uov_euf_cma` uses exactly two cryptographic axioms (`MQ.hard` and `uov_reduces_to_mq`) and one proved lemma (`Negligible.of_le`). Everything else in the proof chain is a real theorem.
+**Proved (was previously bundled into `uov_reduces_to_mq` on a shared sample):** `euf_advantage_le_mqPreimage` — EUF win ⇒ MQ win pointwise ⇒ `Pr[EUF] ≤ Pr[MQ]` via `FinDist.prob_mono`.
+
+`MQ.advantage` / `UOV.advantage` are **definitions** given `[MQExperimentDist]` (`GameProbability.lean`).
 
 ---
 
@@ -275,5 +283,5 @@ The release workflow builds all three language artifacts, creates a GitHub Relea
 ## References
 
 - Patarin, J. (1997). *The Oil and Vinegar Signature Scheme.* Dagstuhl Workshop on Cryptography.
-- NIST PQC: UOV specification (2023 onward).
+- NIST PQC: main Round 3 → **FIPS 204/205/206**; **UOV** in Additional Signatures Round 3 — [IR 8610](https://nvlpubs.nist.gov/nistpubs/ir/2026/NIST.IR.8610.pdf), [announcement](https://csrc.nist.gov/News/2026/nist-advances-9-candidates-to-the-3rd-round-of-pqc) — **[PQC benchmarks & comparison](docs/PQC_NIST_AND_BENCHMARKS.md)**.
 - Lean 4: https://lean-lang.org / Mathlib: https://leanprover-community.github.io

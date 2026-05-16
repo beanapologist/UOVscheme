@@ -11,9 +11,11 @@
   `verify`, and validity follows from `SchemeCorrectness.sign_then_verify`.
 -/
 
-import UOVscheme.SchemeCorrectness
+import UOVscheme.EUFCMA
 
 variable {q o v : ℕ} [Fact (Nat.Prime q)]
+
+open MQ PublicMap
 
 namespace UOVKey
 
@@ -33,6 +35,11 @@ def isValid (c : StateCertificate q o v) (key : UOVKey q o v) : Prop :=
 theorem isValid_iff (c : StateCertificate q o v) (key : UOVKey q o v) :
     c.isValid key ↔ key.publicEval c.σ = c.y :=
   Iff.rfl
+
+/-- Valid certificate ⇔ MQ preimage under the key's public map (reduction layer). -/
+theorem isValid_iff_mq_win (c : StateCertificate q o v) (key : UOVKey q o v) :
+    c.isValid key ↔ MQ.win (ofKey key) c.y c.σ :=
+  EUFCMA.verify_iff_mq_win key c.y c.σ
 
 /-- Soundness direction: validity implies equality on the public map. -/
 theorem valid_publicEval (c : StateCertificate q o v) (key : UOVKey q o v)

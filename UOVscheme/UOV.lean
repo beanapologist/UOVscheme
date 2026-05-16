@@ -239,7 +239,8 @@ variable {q o v : ℕ}
     structure is assumed to give only negligible success probability.
 
     This is exactly the `MQ.hard` axiom in `MQProblem.lean` (average-case MQ). -/
-theorem trapdoor_hardness_mq [Fact (Nat.Prime q)] (A : MQAdversary q o v) :
+theorem trapdoor_hardness_mq [Fact (Nat.Prime q)] {Ξ : Type*} [Fintype Ξ] [DecidableEq Ξ]
+    [MQExperimentDist q o v Ξ] (A : MQAdversary q o v) :
     Negligible (MQ.advantage A) :=
   MQ.hard A
 

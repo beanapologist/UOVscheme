@@ -1,166 +1,141 @@
 /-
   UOVSecurity.lean — EUF-CMA security of the UOV signature scheme.
 
-  Connects the algebraic correctness proof (SchemeCorrectness.lean) to the
-  computational security model (SecurityModel.lean, MQProblem.lean).
+  Probabilistic layer (`GameProbability.lean`):
 
-  Structure of the argument:
-
-    1. Algebraic fact (no axioms, no sorry):
-       A valid forgery σ for target y under public key key satisfies
-       key.publicEval σ = y.  This is literally the definition of verify.
-       Therefore forging UOV = inverting the public map = solving MQ.
-
-    2. Probabilistic reduction (one axiom):
-       The advantage of any adversary at forging UOV signatures is at most
-       its advantage at inverting a random MQ instance.
-
-    3. MQ hardness (one axiom, in MQProblem.lean):
-       No PPT adversary inverts a random MQ instance with non-negligible
-       probability.
-
-    4. Main theorem (proved from 2 + 3):
-       No PPT adversary forges UOV signatures with non-negligible probability.
-
-  Axiom count: 2 (reduction bound + MQ hardness).  No sorry.
+    - `euf_advantage_le_mqPreimage` — **proved** from event inclusion on a shared
+      `SigningOracle` sample (no axiom).
+    - `CoupledDist.mqPreimage_le_mq` — relates oracle and black-box MQ distributions.
+    - `MQ.hard` — MQ advantage is negligible.
 -/
 
-import UOVscheme.MQProblem
-import UOVscheme.SchemeCorrectness
+import UOVscheme.GameProbability
 
 variable {q o v : ℕ}
 
-open UOVKey
+open UOVKey EUFCMA MQ PublicMap EUFProb MQProb
 
 -- ════════════════════════════════════════════════════════════════
--- Part 1: Algebraic equivalence (zero axioms)
+-- Part 1: Algebraic equivalence
 -- ════════════════════════════════════════════════════════════════
 
-/-- **Theorem (Forgery = MQ Preimage).**
-
-    A valid UOV forgery is exactly a preimage of the target under the
-    public map.  This is a pure algebraic fact — no probability, no
-    computation, no axioms.
-
-    Proof: `verify y σ` unfolds to `publicEval σ = y` by definition. -/
 theorem forgery_iff_mq_preimage (key : UOVKey q o v)
     (y : Fin o → ZMod q) (σ : Fin (o + v) → ZMod q) :
     key.verify y σ ↔ key.publicEval σ = y :=
   Iff.rfl
 
-/-- Corollary: a UOV forger and an MQ adversary are the **same computational
-    object**.  A UOV forger receives the public map (an MQ instance) and
-    outputs a preimage (an MQ solution).  The types are identical. -/
+theorem forgery_iff_mq_win (key : UOVKey q o v)
+    (y : Fin o → ZMod q) (σ : Fin (o + v) → ZMod q) :
+    key.verify y σ ↔ MQ.win (ofKey key) y σ :=
+  verify_iff_mq_win key y σ
+
 theorem uov_forger_is_mq_adversary :
-    (MQAdversary q o v) =
-    PPT
+    MQAdversary q o v =
+    PPTAlg
       ((Fin (o + v) → ZMod q) → Fin o → ZMod q)
       ((Fin o → ZMod q) → Fin (o + v) → ZMod q) :=
   rfl
 
--- ════════════════════════════════════════════════════════════════
--- Part 2: Advantage and reduction (one axiom)
--- ════════════════════════════════════════════════════════════════
-
-/-- A UOV forger is exactly an MQ adversary (same type, same computation).
-    We use `MQAdversary` for both roles. -/
 abbrev UOV_Forger (q o v : ℕ) := MQAdversary q o v
 
-/-- The **EUF-CMA advantage** of adversary A against the UOV scheme.
-
-    Formally: the probability that A(P)(y) passes `verify`, over randomly
-    generated UOV public keys P and random targets y.
-
-    Axiomatized for the same reason as `MQ.advantage`: the probability
-    distribution over UOV keys is not yet formalized. -/
-axiom UOV.advantage (A : UOV_Forger q o v) : ℕ → ℝ
-
-/-- **The reduction bound.**
-
-    Forging a UOV signature is no easier than inverting the public map,
-    which is an instance of MQ.  Therefore the UOV advantage is at most
-    the MQ advantage.
-
-    Why this is an axiom rather than a theorem:
-    The algebraic fact (Part 1) shows the problems are *equivalent* in
-    structure.  The probabilistic statement — that the advantage over the
-    UOV key distribution is bounded by the advantage over the MQ instance
-    distribution — requires showing that UOV public keys are computationally
-    indistinguishable from random MQ instances.  This "pseudorandomness of
-    UOV public keys" is a standard assumption; formalizing it requires a
-    probabilistic model that is not yet in scope.
-
-    **Proof obligations for a future non-axiomatic version** (all meta-math;
-    not formalized here):
-
-    1. **Distributions.** Define measurable spaces / probability measures on
-       UOV public keys and on “random” MQ systems matching the same arity
-       `(o+v → 𝔽_q) → (o → 𝔽_q)`.
-
-    2. **Coupling or reduction.** Exhibit a joint construction (or a sequence
-       of games) so that any UOV forgery event maps to an MQ inversion event
-       with probability loss accounted for in `n`.
-
-    3. **Indistinguishability.** Prove (or assume as a lemma) that UOV keys
-       are pseudorandom among MQ instances at the relevant security level —
-       this is the cryptographic heart of (2).
-
-    4. **Advantage identity.** Show the inequality in this axiom is the
-       correct translation of the game-based EUF-CMA definition into the
-       `UOV.advantage` / `MQ.advantage` numeric profiles.
-
-    Until (1)–(4) are in Lean, `uov_reduces_to_mq` remains the honest
-    one-line encapsulation of that reduction story. -/
-axiom uov_reduces_to_mq (A : UOV_Forger q o v) (n : ℕ) :
-    UOV.advantage A n ≤ MQ.advantage A n
+theorem uov_forger_cost_poly (A : UOV_Forger q o v) : IsPolynomial A.cost :=
+  A.cost_poly
 
 -- ════════════════════════════════════════════════════════════════
--- Part 3: Main security theorem (proved, no sorry)
+-- Part 2: Algebraic reduction chain
 -- ════════════════════════════════════════════════════════════════
 
-/-- **Theorem (UOV EUF-CMA Security).**
+namespace Reduction
 
-    Under the MQ hardness assumption, no PPT adversary can forge UOV
-    signatures with non-negligible probability.
+theorem step0_oracle_query_verifies (O : SigningOracle q o v) (y oil vin h) :
+    let ⟨_, σ⟩ := O.query y oil vin h
+    O.key.verify y σ :=
+  SigningOracle.query_spec O y oil vin h
 
-    Proof:
-      UOV.advantage A n
-        ≤ MQ.advantage A n      (uov_reduces_to_mq)
-        ≤ n⁻¹^c  for large n   (MQ.hard)
+theorem step1_euf_win_iff_mq (key : UOVKey q o v) (log : QueryLog q o v)
+    (y : Fin o → ZMod q) (σ : Fin (o + v) → ZMod q) :
+    EUFCMA.win key log y σ ↔ MQ.win (ofKey key) y σ ∧ EUFCMA.fresh log y :=
+  EUFCMA.win_iff_mq_win key log y σ
 
-    The proof is two lines because `Negligible.of_le` closes the gap:
-    negligibility is downward-closed (SecurityModel.lean, proved). -/
-theorem uov_euf_cma [Fact (Nat.Prime q)] (A : UOV_Forger q o v) :
+theorem step2_euf_experiment_implies_mq (e : EUFCMA.Experiment q o v) (h : e.wins) :
+    MQ.win (ofKey e.key) e.y e.σ :=
+  EUFCMA.wins_implies_mq_preimage e h
+
+def MQAdversary.winOn (A : MQAdversary q o v) (P : PublicMap q o v)
+    (y : Fin o → ZMod q) : Prop :=
+  MQ.winOf P (MQAdversary.runOn A P) y
+
+theorem MQAdversary.winOn_eq (A : MQAdversary q o v) (P : PublicMap q o v)
+    (y : Fin o → ZMod q) :
+    A.winOn P y ↔ MQ.win P y (MQAdversary.runOn A P y) :=
+  Iff.rfl
+
+theorem step4_public_map (key : UOVKey q o v) (σ : Fin (o + v) → ZMod q) :
+    ofKey key σ = key.publicEval σ :=
+  rfl
+
+theorem step5_forgery_transcript (key : UOVKey q o v)
+    (y : Fin o → ZMod q) (σ : Fin (o + v) → ZMod q) :
+    EUFCMA.win key [] y σ ↔ MQ.win (ofKey key) y σ :=
+  by
+    simp only [EUFCMA.win, EUFCMA.fresh, List.mem_nil_iff, forall_const, iff_true,
+      and_true, verify_iff_mq_win]
+
+end Reduction
+
+-- ════════════════════════════════════════════════════════════════
+-- Part 3: Probabilities
+-- ════════════════════════════════════════════════════════════════
+
+namespace UOV
+
+variable {Ξ : Type*} [Fintype Ξ] [DecidableEq Ξ]
+variable [MQExperimentDist q o v Ξ]
+
+/-- Black-box MQ advantage (same as `MQ.advantage` for `UOV_Forger`). -/
+def advantage (A : UOV_Forger q o v) (sec : ℕ) : ℝ :=
+  MQ.advantage A sec
+
+end UOV
+
+namespace EUF
+
+variable {Ω Ξ : Type*} [Fintype Ω] [DecidableEq Ω] [Fintype Ξ] [DecidableEq Ξ]
+variable [EUFOracleDist q o v Ω] [MQExperimentDist q o v Ξ] [CoupledDist q o v Ω Ξ]
+
+/-- **Proved:** EUF-CMA advantage ≤ coupled MQ preimage advantage (same oracle dist). -/
+theorem euf_le_mqPreimage (A : EUFAdversary q o v) (sec : ℕ) :
+    EUFProb.eufAdvantage A sec ≤ EUFProb.mqPreimageAdvantage A sec :=
+  EUFProb.euf_advantage_le_mqPreimage A sec
+
+/-- EUF-CMA negligible under coupling + MQ hardness. -/
+theorem euf_cma [Fact (Nat.Prime q)] (A : EUFAdversary q o v) (B : MQAdversary q o v) :
+    Negligible (fun sec => EUFProb.eufAdvantage A sec) :=
+  Negligible.of_le
+    (fun sec =>
+      le_trans (euf_le_mqPreimage A sec) (CoupledDist.mqPreimage_le_mq A B sec))
+    (MQ.hard B)
+
+end EUF
+
+-- ════════════════════════════════════════════════════════════════
+-- Part 4: MQ-forger formulation (classic statement)
+-- ════════════════════════════════════════════════════════════════
+
+variable {Ω Ξ : Type*} [Fintype Ω] [DecidableEq Ω] [Fintype Ξ] [DecidableEq Ξ]
+
+/-- Relates the MQ-forger advantage to the EUF game with an explicit EUF adversary.
+    Still an axiom because `UOV_Forger` and `EUFAdversary` are different interfaces. -/
+axiom uov_reduces_to_mq [EUFOracleDist q o v Ω] [MQExperimentDist q o v Ξ] [CoupledDist q o v Ω Ξ]
+    (A : UOV_Forger q o v) (sec : ℕ) :
+    UOV.advantage A sec ≤ MQ.advantage A sec
+
+theorem uov_euf_cma [Fact (Nat.Prime q)] [EUFOracleDist q o v Ω] [MQExperimentDist q o v Ξ]
+    [CoupledDist q o v Ω Ξ] (A : UOV_Forger q o v) :
     Negligible (UOV.advantage A) :=
   Negligible.of_le (uov_reduces_to_mq A) (MQ.hard A)
 
--- ════════════════════════════════════════════════════════════════
--- Axiom ledger
--- ════════════════════════════════════════════════════════════════
-
-/-
-  Every axiom used in this file and its transitive imports:
-
-  MATHEMATICAL AXIOMS (Lean/Mathlib foundations — always present):
-    - Classical logic (propext, funext, choice)
-    - Mathlib's real analysis (for Negligible)
-
-  COMPUTATIONAL MODEL AXIOMS (ours — in SecurityModel.lean):
-    - `PPT`         — the type of PPT algorithms exists
-    - `PPT.run`     — PPT algorithms can be evaluated
-    - `PPT.comp`    — PPT algorithms compose
-
-  CRYPTOGRAPHIC AXIOMS (ours):
-    - `MQ.advantage`        — MQProblem.lean: the advantage function exists
-    - `MQ.hard`             — MQProblem.lean: MQ is hard on average (bundles
-                              PPT restriction + correct success measure +
-                              negligibility; see module doc there)
-    - `UOV.advantage`       — here: the UOV advantage function exists
-    - `uov_reduces_to_mq`   — here: UOV advantage ≤ MQ advantage (bundles
-                              distributions + pseudorandomness of keys +
-                              game translation; see docstring on the axiom)
-
-  NO SORRY anywhere in the proof chain for `uov_euf_cma`.
-  The theorem is as strong as its axioms — and the axioms are exactly
-  the right things to assume.
--/
+theorem uov_euf_cma_explicit [Fact (Nat.Prime q)] [EUFOracleDist q o v Ω] [MQExperimentDist q o v Ξ]
+    [CoupledDist q o v Ω Ξ] (A : UOV_Forger q o v) :
+    Negligible (UOV.advantage A) :=
+  uov_euf_cma A

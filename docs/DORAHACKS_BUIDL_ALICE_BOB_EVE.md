@@ -5,6 +5,8 @@
 
 **Repository:** [github.com/beanapologist/UOVscheme](https://github.com/beanapologist/UOVscheme)
 
+**NIST Round 3 / FIPS vs UOV (sizes, benchmarks, gas):** [PQC_NIST_AND_BENCHMARKS.md](PQC_NIST_AND_BENCHMARKS.md) · selection report [NIST IR 8610](https://nvlpubs.nist.gov/nistpubs/ir/2026/NIST.IR.8610.pdf)
+
 ---
 
 ## Project name
@@ -75,6 +77,8 @@ CRT (`CRTBridge.lean`) is a **lossless** “two moduli, one class” story — p
 ## Technical architecture (short)
 
 **Lean 4 + Mathlib:** modules listed above; prime-field **ZMod q** in the reference formalization (distinct from NIST’s GF(2^k) UOV parameter packaging in the standard document).
+
+**NIST context:** The **main** PQC Round 3 (2020–2022) standardized **Dilithium / Falcon / SPHINCS+** as **ML-DSA**, **FN-DSA**, and **SLH-DSA** (FIPS 204/206/205). Separately, [NIST IR 8610](https://nvlpubs.nist.gov/nistpubs/ir/2026/NIST.IR.8610.pdf) records why **UOV** and eight other schemes advanced from **Additional Signatures Round 2 → Round 3** (May 2026). IR 8610 §3.11: UOV offers **very short σ** and **fast verification**, but **large public keys** and ongoing parameter hardening after wedge/small-field analysis. SilentVerify: check **P(σ) = y** off-chain. Full tables: [PQC_NIST_AND_BENCHMARKS.md](PQC_NIST_AND_BENCHMARKS.md).
 
 **Python:** `impl/python/uov/` (UOV + certificates), `impl/python/statecert/` (anchors, multi-chain RPC helpers, verifier), tests under `impl/python/tests/`.
 
