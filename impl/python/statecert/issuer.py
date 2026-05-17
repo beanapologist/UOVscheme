@@ -15,7 +15,11 @@ from .verifier import StateVerifier
 
 
 def _parse_profile() -> Tuple[int, int, int]:
-    default = "I_MIN" if os.environ.get("SILENTVERIFY_ENV", "").lower() in ("production", "prod") else "TOY"
+    default = (
+        "I_MIN"
+        if os.environ.get("SILENTVERIFY_ENV", "").lower() in ("production", "prod")
+        else "TOY"
+    )
     level = os.environ.get("SILENTVERIFY_UOV_PROFILE", default).strip()
     if level == "TOY":
         return (31, 4, 8)

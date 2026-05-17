@@ -180,9 +180,7 @@ def verify_evm_state_certificate_via_rpc(
         timeout=timeout,
         rpc_headers=rpc_headers,
     )
-    _policy_evm_depth(
-        safe_url, state, policy, timeout=timeout, rpc_headers=rpc_headers
-    )
+    _policy_evm_depth(safe_url, state, policy, timeout=timeout, rpc_headers=rpc_headers)
     return verify_evm_state_certificate_against_chain(certificate_wire, state)
 
 
@@ -258,10 +256,18 @@ def verify_cross_chain_state_transition_via_rpc(
     )
     pol = policy if isinstance(policy, dict) else None
     _policy_evm_depth(
-        s_url, src_state, _policy_leg_dict(pol, "src"), timeout=timeout, rpc_headers=s_hdr
+        s_url,
+        src_state,
+        _policy_leg_dict(pol, "src"),
+        timeout=timeout,
+        rpc_headers=s_hdr,
     )
     _policy_evm_depth(
-        d_url, dst_state, _policy_leg_dict(pol, "dst"), timeout=timeout, rpc_headers=d_hdr
+        d_url,
+        dst_state,
+        _policy_leg_dict(pol, "dst"),
+        timeout=timeout,
+        rpc_headers=d_hdr,
     )
     return verify_cross_chain_state_transition_against_pair(
         certificate_wire, src_state, dst_state
@@ -298,7 +304,9 @@ def _fetch_cross_l1_leg(
         caip = leg.get("caip2_chain_id")
         if caip is not None and not isinstance(caip, str):
             raise ValueError(f"{side}.caip2_chain_id must be a string or omitted")
-        hdr = leg.get("rpc_headers") if isinstance(leg.get("rpc_headers"), dict) else None
+        hdr = (
+            leg.get("rpc_headers") if isinstance(leg.get("rpc_headers"), dict) else None
+        )
         state = fetch_chain_state_evm(
             url,
             block=block,

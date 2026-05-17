@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
 
-from statecert import StateCertificate, StateVerifier
+from statecert import StateCertificate
 from statecert.chain_api import (
     fetch_chain_state_evm,
     fetch_cosmos_commitment,
@@ -25,7 +25,7 @@ from statecert.state_hash import (
     CrossL1Commitment,
 )
 
-from .app_common import issue_response, load_verifier_instance, new_rng
+from .app_common import load_verifier_instance, new_rng
 
 
 def _md(chain: str, extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

@@ -9,33 +9,32 @@ from __future__ import annotations
 import os
 import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from pathlib import Path
+from fastapi import FastAPI, Request  # noqa: E402
+from fastapi.exceptions import RequestValidationError  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import JSONResponse  # noqa: E402
+from fastapi.openapi.utils import get_openapi  # noqa: E402
+from fastapi.responses import FileResponse  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from slowapi import Limiter, _rate_limit_exceeded_handler  # noqa: E402
+from slowapi.errors import RateLimitExceeded  # noqa: E402
+from slowapi.util import get_remote_address  # noqa: E402
 
-from fastapi import FastAPI, Request
-from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.openapi.utils import get_openapi
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
-
-from . import auth
-from .app_common import api_description
-from .deps import cors_origins
-from .routes_certs import router as certs_router
-from .routes_chains import router as chains_router
-from .routes_billing import router as billing_router
-from .routes_legacy import router as legacy_router
-from .routes_meta import router as meta_router
-from .routes_print import router as print_router
+from . import auth  # noqa: E402
+from .app_common import api_description  # noqa: E402
+from .deps import cors_origins  # noqa: E402
+from .routes_certs import router as certs_router  # noqa: E402
+from .routes_chains import router as chains_router  # noqa: E402
+from .routes_billing import router as billing_router  # noqa: E402
+from .routes_legacy import router as legacy_router  # noqa: E402
+from .routes_meta import router as meta_router  # noqa: E402
+from .routes_print import router as print_router  # noqa: E402
 
 _STATIC_DIR = Path(__file__).resolve().parent / "static"
 _UI_VERSION = "2026-05-16"

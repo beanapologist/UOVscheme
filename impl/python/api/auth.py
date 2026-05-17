@@ -114,7 +114,6 @@ def _sync_env_keys() -> None:
                 key = key.strip()
             else:
                 tier, key = "free", part
-            quota = _quota_for_tier(tier)
             register_api_key(key, tier=tier, label=key[:8] + "…", conn=conn)
         conn.commit()
 
