@@ -50,7 +50,11 @@ Optional fixed operator keys (survive redeploys even without remembering free ke
 
 ```bash
 SILENTVERIFY_API_KEYS=free:your-long-lived-key,pro:another-key
+# or a single bootstrap key:
+SILENTVERIFY_BOOTSTRAP_API_KEY=your-long-lived-key
 ```
+
+**Do not use `sv_dev_test_key` in production** — it is not registered unless you add it to `SILENTVERIFY_API_KEYS`.
 
 ## 5. Optional
 

@@ -103,6 +103,9 @@ def _migrate_schema(conn: sqlite3.Connection) -> None:
 
 
 def _sync_env_keys() -> None:
+    bootstrap = os.environ.get("SILENTVERIFY_BOOTSTRAP_API_KEY", "").strip()
+    if bootstrap:
+        register_api_key(bootstrap, tier="free", label="bootstrap")
     raw = os.environ.get("SILENTVERIFY_API_KEYS", "").strip()
     if not raw:
         if _is_production():

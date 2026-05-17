@@ -199,6 +199,18 @@
     .errors-help { font-size: 0.85rem; color: var(--muted); margin-top: 1rem; }
     .errors-help summary { cursor: pointer; font-weight: 600; color: var(--navy); }
     .errors-help ul { margin: 0.5rem 0 0 1.1rem; }
+    .key-alert {
+      display: none;
+      background: #fff3cd;
+      border: 1px solid #e6c200;
+      color: #5c4a00;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    .key-alert.show { display: block; }
+    .key-alert .btn { margin-top: 0.5rem; }
   </style>
 </head>
 <body>
@@ -216,12 +228,18 @@
     <h1>Issue, verify &amp; print certificates</h1>
     <p class="lead">Step-by-step console for agent PKI and chain state certs. No Swagger maze — pick a flow, run it, then print a signed summary for your records.</p>
 
+    <div id="key-alert" class="key-alert" role="alert">
+      <strong>API key not accepted.</strong>
+      <span id="key-alert-text"> Get a fresh key below (old keys stop working after server redeploys).</span>
+      <button type="button" class="btn btn-primary" id="btn-free-key">Get free API key</button>
+    </div>
     <div class="key-row">
       <div style="flex:1;min-width:200px">
         <label for="api-key">X-API-Key</label>
-        <input id="api-key" type="password" placeholder="sv_dev_test_key or your key from Home" autocomplete="off" />
+        <input id="api-key" type="password" placeholder="Paste key or click Get free API key" autocomplete="off" />
       </div>
       <button type="button" class="btn btn-ghost" id="save-key">Save key</button>
+      <button type="button" class="btn btn-coral" id="btn-free-key-2">Get free key</button>
     </div>
 
     <nav class="tabs" role="tablist">
@@ -403,41 +421,84 @@
     const outEl = document.getElementById('output');
     const statusEl = document.getElementById('status');
 
-    let devKeyAllowed = true;
-    fetch('/api/v1/params').then(r => r.json()).then((p) => {
-      const auth = p.auth || {};
-      devKeyAllowed = auth.dev_key_enabled !== false;
-      if (!localStorage.getItem(KEY) && devKeyAllowed) {
-        keyEl.placeholder = 'sv_dev_test_key (local dev only)';
-        keyEl.value = 'sv_dev_test_key';
-      } else if (!localStorage.getItem(KEY)) {
-        keyEl.placeholder = 'Get a free key at Home — required in production';
-      }
-    }).catch(() => {});
+    let devKeyAllowed = false;
+    const keyAlert = document.getElementById('key-alert');
 
-    keyEl.value = localStorage.getItem(KEY) || keyEl.value || '';
+    function showKeyAlert(msg) {
+      if (msg) document.getElementById('key-alert-text').textContent = ' ' + msg;
+      keyAlert.classList.add('show');
+    }
+    function hideKeyAlert() {
+      keyAlert.classList.remove('show');
+    }
+
+    async function fetchFreeKey() {
+      const r = await fetch('/api/v1/billing/free-key', { method: 'POST' });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.api_key) {
+        throw new Error(data.detail?.message || data.detail || 'Could not issue free key');
+      }
+      keyEl.value = data.api_key;
+      localStorage.setItem(KEY, data.api_key);
+      hideKeyAlert();
+      toast('New API key saved — try your request again');
+      return data.api_key;
+    }
+
+    document.getElementById('btn-free-key').onclick = () => fetchFreeKey().catch((e) => alert(e.message));
+    document.getElementById('btn-free-key-2').onclick = () => fetchFreeKey().catch((e) => alert(e.message));
 
     async function validateSavedKey() {
       const k = keyEl.value.trim();
-      if (!k) return;
+      if (!k) {
+        if (!devKeyAllowed) showKeyAlert('No API key set.');
+        return false;
+      }
       try {
         const r = await fetch('/api/v1/billing/validate-key', { headers: { 'X-API-Key': k } });
         const data = await r.json();
-        if (!data.valid) {
-          localStorage.removeItem(KEY);
-          keyEl.value = devKeyAllowed ? '' : '';
-          statusEl.hidden = false;
-          statusEl.className = 'status fail';
-          statusEl.textContent = data.hint || 'API key invalid — get a new one at Home';
-          if (devKeyAllowed && !keyEl.value) keyEl.value = 'sv_dev_test_key';
+        if (data.valid) {
+          hideKeyAlert();
+          return true;
         }
-      } catch (_) {}
+        localStorage.removeItem(KEY);
+        keyEl.value = '';
+        showKeyAlert(data.hint || 'This key is not registered on the server.');
+        return false;
+      } catch (_) {
+        return false;
+      }
     }
-    validateSavedKey();
 
-    document.getElementById('save-key').onclick = () => {
-      localStorage.setItem(KEY, keyEl.value.trim());
-      toast('API key saved in this browser');
+    async function initApiKey() {
+      try {
+        const p = await fetch('/api/v1/params').then((r) => r.json());
+        const authInfo = p.auth || {};
+        devKeyAllowed = authInfo.dev_key_enabled === true;
+      } catch (_) {
+        devKeyAllowed = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      }
+
+      const saved = localStorage.getItem(KEY);
+      if (saved) {
+        keyEl.value = saved;
+      } else if (devKeyAllowed) {
+        keyEl.value = 'sv_dev_test_key';
+        keyEl.placeholder = 'sv_dev_test_key (local dev)';
+      } else {
+        keyEl.value = '';
+        showKeyAlert('Click Get free API key to call issue endpoints.');
+      }
+      await validateSavedKey();
+    }
+    initApiKey();
+
+    document.getElementById('save-key').onclick = async () => {
+      const k = keyEl.value.trim();
+      if (!k) return;
+      localStorage.setItem(KEY, k);
+      const ok = await validateSavedKey();
+      toast(ok ? 'API key saved and verified' : 'Key saved but not valid on server — use Get free key');
     };
 
     let lastCert = null;
@@ -567,7 +628,12 @@
     function formatError(data) {
       if (typeof data === 'string') return data;
       const d = data.detail;
-      if (typeof d === 'string') return d;
+      if (typeof d === 'string') {
+        if (d.toLowerCase().includes('api key')) {
+          return d + '\nHint: Click Get free API key above (production keys do not survive redeploys without a DB volume).';
+        }
+        return d;
+      }
       if (d && typeof d === 'object') {
         const parts = [d.message || d.error || ''];
         if (d.hint) parts.push('Hint: ' + d.hint);
@@ -575,6 +641,13 @@
         return parts.filter(Boolean).join('\n');
       }
       return JSON.stringify(data, null, 2);
+    }
+
+    function isInvalidKeyResponse(status, data) {
+      if (status !== 403) return false;
+      const d = data?.detail;
+      if (typeof d === 'string') return d.toLowerCase().includes('api key');
+      return d && typeof d === 'object' && d.error === 'invalid_api_key';
     }
 
     async function api(path, body) {
@@ -585,9 +658,11 @@
       if (!r.ok) {
         const friendly = typeof data === 'object' ? { ...data, detail: formatError(data) } : formatError(data);
         show(friendly, false);
-        if (r.status === 403 && typeof data?.detail === 'object' && data.detail.error === 'invalid_api_key') {
+        if (isInvalidKeyResponse(r.status, data)) {
           localStorage.removeItem(KEY);
-          toast(data.detail.hint || 'Invalid API key — get a new free key at Home');
+          keyEl.value = '';
+          const hint = typeof data.detail === 'object' ? data.detail.hint : null;
+          showKeyAlert(hint || 'Invalid API key — get a new free key.');
         }
         throw new Error('api error');
       }
