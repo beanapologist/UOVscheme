@@ -157,6 +157,14 @@ class TestSaasApi:
         assert r.status_code == 200
         assert "PASSED" in r.text or "Cryptographic verification" in r.text
 
+    def test_validate_key(self, client):
+        bad = client.get("/api/v1/billing/validate-key", headers={"X-API-Key": "not-a-real-key"})
+        assert bad.json()["valid"] is False
+        good = client.get(
+            "/api/v1/billing/validate-key", headers={"X-API-Key": "saas-test-key"}
+        )
+        assert good.json()["valid"] is True
+
     def test_missing_api_key(self, client):
         r = client.post(
             "/api/v1/certs/agent/issue",

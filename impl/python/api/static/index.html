@@ -226,7 +226,12 @@
     }
     async function ensureApiKey() {
       let key = localStorage.getItem('sv_api_key');
-      if (key) return key;
+      if (key) {
+        const check = await fetch('/api/v1/billing/validate-key', { headers: { 'X-API-Key': key } });
+        const data = await check.json().catch(() => ({}));
+        if (data.valid) return key;
+        localStorage.removeItem('sv_api_key');
+      }
       key = (await post('/api/v1/billing/free-key')).api_key;
       localStorage.setItem('sv_api_key', key);
       return key;

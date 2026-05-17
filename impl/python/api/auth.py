@@ -35,10 +35,16 @@ def _db_path() -> Path:
     return Path(raw) if raw else DEFAULT_DB
 
 
+def db_is_configured_persistent() -> bool:
+    """True when operator set an explicit DB path (e.g. Railway volume)."""
+    return bool(os.environ.get("SILENTVERIFY_USAGE_DB", "").strip())
+
+
 def init_db() -> None:
     path = _db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     with _connect() as conn:
+        conn.execute("PRAGMA journal_mode=WAL")
         conn.executescript(
             """
             CREATE TABLE IF NOT EXISTS api_keys (
@@ -248,6 +254,20 @@ def validate_api_key(api_key: Optional[str]) -> tuple[str, str, int]:
     if row is None:
         raise ValueError("invalid_api_key")
     return kh, str(row["tier"]), int(row["monthly_quota"])
+
+
+def invalid_key_hint() -> str:
+    if _is_production() and not db_is_configured_persistent():
+        return (
+            "This key is not registered. Free keys are stored on the server — after a "
+            "deploy without a persistent volume, old keys stop working. Get a new key at / "
+            "(Get free API key). Operators: set SILENTVERIFY_USAGE_DB on a Railway volume "
+            "or SILENTVERIFY_API_KEYS for fixed keys."
+        )
+    return (
+        "Unknown API key. Use the key from Home (Get free API key) or check "
+        "SILENTVERIFY_API_KEYS on the server."
+    )
 
 
 def check_and_record_usage(key_hash: str, endpoint: str, monthly_quota: int) -> None:

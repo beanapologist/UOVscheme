@@ -149,10 +149,21 @@ def chain_catalog() -> List[Dict[str, Any]]:
 
 
 def params_payload() -> Dict[str, Any]:
+    import os
+
+    from . import auth
+
     v = load_verifier_instance()
     k = v.key
+    prod = auth._is_production()
     return {
         **recommended_params(),
+        "auth": {
+            "production": prod,
+            "dev_key_enabled": not prod or bool(os.environ.get("SILENTVERIFY_API_KEYS", "").strip()),
+            "persistent_api_key_db": auth.db_is_configured_persistent(),
+            "free_key_url": "/api/v1/billing/free-key",
+        },
         "issuer": {
             "q": k.q,
             "o": k.o,

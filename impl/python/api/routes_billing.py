@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from . import auth, billing
-from .deps import require_api_key
+from .deps import api_key_header, require_api_key
 
 router = APIRouter(prefix="/api/v1/billing", tags=["Billing"])
 
@@ -64,6 +64,28 @@ async def stripe_webhook(request: Request) -> Dict[str, Any]:
         if "signature" in msg.lower():
             raise HTTPException(status_code=400, detail="invalid_stripe_signature") from e
         raise HTTPException(status_code=400, detail=f"webhook_error: {msg}") from e
+
+
+@router.get("/validate-key")
+async def validate_key(
+    x_api_key: Optional[str] = Depends(api_key_header),
+) -> Dict[str, Any]:
+    """Check whether an API key is registered (no quota charge)."""
+    try:
+        kh, tier, quota = auth.validate_api_key(x_api_key)
+        return {
+            "valid": True,
+            "tier": tier,
+            "monthly_quota": quota,
+            **auth.usage_summary(kh),
+        }
+    except ValueError as e:
+        code = str(e)
+        return {
+            "valid": False,
+            "error": code,
+            "hint": auth.invalid_key_hint() if code == "invalid_api_key" else "Send X-API-Key header.",
+        }
 
 
 @router.get("/usage")

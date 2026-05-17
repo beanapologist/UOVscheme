@@ -403,7 +403,38 @@
     const outEl = document.getElementById('output');
     const statusEl = document.getElementById('status');
 
-    keyEl.value = localStorage.getItem(KEY) || 'sv_dev_test_key';
+    let devKeyAllowed = true;
+    fetch('/api/v1/params').then(r => r.json()).then((p) => {
+      const auth = p.auth || {};
+      devKeyAllowed = auth.dev_key_enabled !== false;
+      if (!localStorage.getItem(KEY) && devKeyAllowed) {
+        keyEl.placeholder = 'sv_dev_test_key (local dev only)';
+        keyEl.value = 'sv_dev_test_key';
+      } else if (!localStorage.getItem(KEY)) {
+        keyEl.placeholder = 'Get a free key at Home — required in production';
+      }
+    }).catch(() => {});
+
+    keyEl.value = localStorage.getItem(KEY) || keyEl.value || '';
+
+    async function validateSavedKey() {
+      const k = keyEl.value.trim();
+      if (!k) return;
+      try {
+        const r = await fetch('/api/v1/billing/validate-key', { headers: { 'X-API-Key': k } });
+        const data = await r.json();
+        if (!data.valid) {
+          localStorage.removeItem(KEY);
+          keyEl.value = devKeyAllowed ? '' : '';
+          statusEl.hidden = false;
+          statusEl.className = 'status fail';
+          statusEl.textContent = data.hint || 'API key invalid — get a new one at Home';
+          if (devKeyAllowed && !keyEl.value) keyEl.value = 'sv_dev_test_key';
+        }
+      } catch (_) {}
+    }
+    validateSavedKey();
+
     document.getElementById('save-key').onclick = () => {
       localStorage.setItem(KEY, keyEl.value.trim());
       toast('API key saved in this browser');
@@ -554,6 +585,10 @@
       if (!r.ok) {
         const friendly = typeof data === 'object' ? { ...data, detail: formatError(data) } : formatError(data);
         show(friendly, false);
+        if (r.status === 403 && typeof data?.detail === 'object' && data.detail.error === 'invalid_api_key') {
+          localStorage.removeItem(KEY);
+          toast(data.detail.hint || 'Invalid API key — get a new free key at Home');
+        }
         throw new Error('api error');
       }
       show(data, true);

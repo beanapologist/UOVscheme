@@ -31,7 +31,11 @@ def require_api_key(x_api_key: Optional[str] = Depends(api_key_header)):
             ) from e
         raise HTTPException(
             status_code=403,
-            detail=error_detail(error="invalid_api_key", message="Unknown or revoked API key"),
+            detail=error_detail(
+                error="invalid_api_key",
+                message="Unknown or revoked API key",
+                hint=auth.invalid_key_hint(),
+            ),
         ) from e
     return {"key_hash": key_hash, "tier": tier, "quota": quota}
 

@@ -35,12 +35,21 @@ Production deployment uses **real UOV signing** (`SILENTVERIFY_UOV_PROFILE=I_MIN
 
 Free keys: **Get free API key** on `/` (no Stripe).
 
-## 4. Persistent SQLite (recommended)
+## 4. Persistent SQLite (**required for API keys to survive deploys**)
 
-Add a **Volume** mounted at `/app/data` (or your service path) and set:
+Free and Stripe API keys are stored in SQLite. **Without a volume, every redeploy wipes the database** — old keys return `403 invalid_api_key`. Users must click **Get free API key** again, or you mount persistent storage:
+
+1. Railway → your service → **Volumes** → mount path `/app/data`
+2. Set variable:
 
 ```bash
 SILENTVERIFY_USAGE_DB=/app/data/silentverify_usage.db
+```
+
+Optional fixed operator keys (survive redeploys even without remembering free keys):
+
+```bash
+SILENTVERIFY_API_KEYS=free:your-long-lived-key,pro:another-key
 ```
 
 ## 5. Optional
