@@ -122,6 +122,7 @@ _PUBLIC = {
     "/api/v1/chains/evm/hints",
     "/api/v1/billing/status",
     "/api/v1/billing/validate-key",
+    "/api/v1/billing/diagnostics",
     "/api/v1/billing/free-key",
     "/api/v1/billing/checkout",
     "/api/v1/billing/webhook",

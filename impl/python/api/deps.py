@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import Optional
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import APIKeyHeader
 
 from . import auth
@@ -19,9 +19,25 @@ api_key_header = APIKeyHeader(
 )
 
 
-def require_api_key(x_api_key: Optional[str] = Depends(api_key_header)):
+def _extract_api_key(request: Request, header_key: Optional[str]) -> Optional[str]:
+    if header_key:
+        return header_key
+    for name in ("x-api-key", "X-API-Key", "X-Api-Key"):
+        if name in request.headers:
+            return request.headers.get(name)
+    auth_hdr = request.headers.get("Authorization", "")
+    if auth_hdr.lower().startswith("bearer "):
+        return auth_hdr[7:].strip()
+    return None
+
+
+def require_api_key(
+    request: Request,
+    x_api_key: Optional[str] = Depends(api_key_header),
+):
+    raw_key = _extract_api_key(request, x_api_key)
     try:
-        key_hash, tier, quota = auth.validate_api_key(x_api_key)
+        key_hash, tier, quota = auth.validate_api_key(raw_key)
     except ValueError as e:
         code = str(e)
         if code == "missing_api_key":

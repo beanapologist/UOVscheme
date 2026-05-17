@@ -16,6 +16,8 @@ DEFAULT_FREE_MONTHLY = 100
 DEFAULT_DB = Path(__file__).resolve().parent.parent / "data" / "silentverify_usage.db"
 
 _lock = threading.Lock()
+# Same-process fallback when SQLite path differs or is briefly unavailable (single replica).
+_runtime_keys: Dict[str, tuple[str, int]] = {}
 
 
 def _is_production() -> bool:
@@ -26,13 +28,38 @@ def _month_key() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m")
 
 
+def normalize_api_key(raw: Optional[str]) -> str:
+    """Strip whitespace, BOM, and common paste mistakes (Bearer / header prefix)."""
+    if not raw:
+        return ""
+    key = raw.strip().strip("\ufeff")
+    if key.lower().startswith("bearer "):
+        key = key[7:].strip()
+    for prefix in ("x-api-key:", "x-api-key ", "api-key:", "apikey:"):
+        if key.lower().startswith(prefix):
+            key = key[len(prefix) :].strip()
+            break
+    if len(key) >= 2 and key[0] == key[-1] and key[0] in "\"'":
+        key = key[1:-1].strip()
+    return key
+
+
 def _hash_key(api_key: str) -> str:
-    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    return hashlib.sha256(normalize_api_key(api_key).encode("utf-8")).hexdigest()
 
 
 def _db_path() -> Path:
-    raw = os.environ.get("SILENTVERIFY_USAGE_DB", "")
-    return Path(raw) if raw else DEFAULT_DB
+    raw = os.environ.get("SILENTVERIFY_USAGE_DB", "").strip()
+    if raw:
+        return Path(raw)
+    if _is_production():
+        for candidate in (
+            Path("/app/data/silentverify_usage.db"),
+            Path("/data/silentverify_usage.db"),
+        ):
+            if candidate.parent.is_dir():
+                return candidate
+    return DEFAULT_DB
 
 
 def db_is_configured_persistent() -> bool:
@@ -75,7 +102,13 @@ def init_db() -> None:
         )
         _migrate_schema(conn)
         conn.commit()
+        _load_runtime_from_db(conn)
     _sync_env_keys()
+
+
+def _load_runtime_from_db(conn: sqlite3.Connection) -> None:
+    for row in conn.execute("SELECT key_hash, tier, monthly_quota FROM api_keys"):
+        _runtime_keys[str(row["key_hash"])] = (str(row["tier"]), int(row["monthly_quota"]))
 
 
 def _migrate_schema(conn: sqlite3.Connection) -> None:
@@ -151,8 +184,12 @@ def register_api_key(
     stripe_customer_id: Optional[str] = None,
     conn: Optional[sqlite3.Connection] = None,
 ) -> str:
-    kh = _hash_key(api_key.strip())
+    plain = normalize_api_key(api_key)
+    if not plain:
+        raise ValueError("empty_api_key")
+    kh = _hash_key(plain)
     quota = _quota_for_tier(tier)
+    _runtime_keys[kh] = (tier, quota)
 
     def _run(c: sqlite3.Connection) -> None:
         c.execute(
@@ -168,12 +205,15 @@ def register_api_key(
             (kh, tier, quota, label or tier, stripe_customer_id),
         )
 
-    if conn is not None:
-        _run(conn)
-    else:
-        with _connect() as c:
-            _run(c)
-            c.commit()
+    try:
+        if conn is not None:
+            _run(conn)
+        else:
+            with _connect() as c:
+                _run(c)
+                c.commit()
+    except sqlite3.Error as exc:
+        raise RuntimeError(f"api_key_db_write_failed: {exc}") from exc
     return kh
 
 
@@ -247,16 +287,80 @@ def reveal_checkout_key(session_id: str) -> str:
 
 
 def validate_api_key(api_key: Optional[str]) -> tuple[str, str, int]:
-    if not api_key or not api_key.strip():
+    plain = normalize_api_key(api_key)
+    if not plain:
         raise ValueError("missing_api_key")
-    kh = _hash_key(api_key.strip())
-    with _connect() as conn:
-        row = conn.execute(
-            "SELECT tier, monthly_quota FROM api_keys WHERE key_hash = ?", (kh,)
-        ).fetchone()
+    kh = _hash_key(plain)
+    if kh in _runtime_keys:
+        tier, quota = _runtime_keys[kh]
+        return kh, tier, quota
+    try:
+        with _connect() as conn:
+            row = conn.execute(
+                "SELECT tier, monthly_quota FROM api_keys WHERE key_hash = ?", (kh,)
+            ).fetchone()
+        if row is not None:
+            tier, quota = str(row["tier"]), int(row["monthly_quota"])
+            _runtime_keys[kh] = (tier, quota)
+            return kh, tier, quota
+    except sqlite3.Error:
+        if kh in _runtime_keys:
+            tier, quota = _runtime_keys[kh]
+            return kh, tier, quota
+        raise
+    _sync_env_keys()
+    if kh in _runtime_keys:
+        tier, quota = _runtime_keys[kh]
+        return kh, tier, quota
+    try:
+        with _connect() as conn:
+            row = conn.execute(
+                "SELECT tier, monthly_quota FROM api_keys WHERE key_hash = ?", (kh,)
+            ).fetchone()
+    except sqlite3.Error:
+        raise ValueError("invalid_api_key") from None
     if row is None:
         raise ValueError("invalid_api_key")
-    return kh, str(row["tier"]), int(row["monthly_quota"])
+    tier, quota = str(row["tier"]), int(row["monthly_quota"])
+    _runtime_keys[kh] = (tier, quota)
+    return kh, tier, quota
+
+
+def count_registered_keys() -> int:
+    try:
+        with _connect() as conn:
+            row = conn.execute("SELECT COUNT(*) AS n FROM api_keys").fetchone()
+        return int(row["n"]) if row else 0
+    except sqlite3.Error:
+        return len(_runtime_keys)
+
+
+def auth_diagnostics() -> Dict[str, Any]:
+    path = _db_path()
+    exists = path.is_file()
+    writable = False
+    if not exists:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.touch()
+            writable = True
+        except OSError:
+            writable = False
+    else:
+        writable = os.access(path, os.W_OK)
+    return {
+        "production": _is_production(),
+        "persistent_db_configured": db_is_configured_persistent(),
+        "db_path": str(path),
+        "db_exists": exists,
+        "db_writable": writable,
+        "registered_keys": count_registered_keys(),
+        "runtime_keys_cached": len(_runtime_keys),
+        "replica_hint": (
+            "If registered_keys is 0 after free-key, or keys work intermittently, "
+            "set Railway replicas to 1 and mount SILENTVERIFY_USAGE_DB on a volume."
+        ),
+    }
 
 
 def invalid_key_hint() -> str:

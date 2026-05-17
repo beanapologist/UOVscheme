@@ -436,7 +436,11 @@
       const r = await fetch('/api/v1/billing/free-key', { method: 'POST' });
       const data = await r.json().catch(() => ({}));
       if (!r.ok || !data.api_key) {
-        throw new Error(data.detail?.message || data.detail || 'Could not issue free key');
+        const msg = typeof data.detail === 'object'
+          ? (data.detail.message || JSON.stringify(data.detail))
+          : (data.detail || 'Could not issue free key');
+        if (data.detail?.db) console.error('auth diagnostics', data.detail.db);
+        throw new Error(msg);
       }
       keyEl.value = data.api_key;
       localStorage.setItem(KEY, data.api_key);

@@ -75,11 +75,20 @@ def redeem_session(session_id: str) -> Dict[str, Any]:
 def create_free_api_key() -> Dict[str, Any]:
     key = "sv_free_" + secrets.token_urlsafe(18)
     auth.register_api_key(key, tier="free", label="free_signup")
+    try:
+        auth.validate_api_key(key)
+    except ValueError as exc:
+        raise RuntimeError(
+            "api_key_registration_failed — SQLite may not be writable; "
+            "set SILENTVERIFY_USAGE_DB on a Railway volume. "
+            + str(auth.auth_diagnostics())
+        ) from exc
     return {
         "tier": "free",
         "api_key": key,
         "monthly_quota": auth.DEFAULT_FREE_MONTHLY,
         "message": "Free tier: 100 certificate issuances per month.",
+        "db": auth.auth_diagnostics(),
     }
 
 

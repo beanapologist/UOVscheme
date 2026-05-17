@@ -20,7 +20,17 @@ async def billing_public_status() -> Dict[str, Any]:
 @router.post("/free-key")
 async def issue_free_key() -> Dict[str, Any]:
     """Generate a free-tier API key (shown once)."""
-    return billing.create_free_api_key()
+    try:
+        return billing.create_free_api_key()
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "api_key_registration_failed",
+                "message": str(exc),
+                "db": auth.auth_diagnostics(),
+            },
+        ) from exc
 
 
 @router.post("/checkout")
@@ -66,18 +76,29 @@ async def stripe_webhook(request: Request) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail=f"webhook_error: {msg}") from e
 
 
+@router.get("/diagnostics")
+async def billing_diagnostics() -> Dict[str, Any]:
+    """Public DB/auth diagnostics (no secrets). Use when API keys fail mysteriously."""
+    return auth.auth_diagnostics()
+
+
 @router.get("/validate-key")
 async def validate_key(
+    request: Request,
     x_api_key: Optional[str] = Depends(api_key_header),
 ) -> Dict[str, Any]:
     """Check whether an API key is registered (no quota charge)."""
+    from .deps import _extract_api_key
+
+    raw = _extract_api_key(request, x_api_key)
     try:
-        kh, tier, quota = auth.validate_api_key(x_api_key)
+        kh, tier, quota = auth.validate_api_key(raw)
         return {
             "valid": True,
             "tier": tier,
             "monthly_quota": quota,
             **auth.usage_summary(kh),
+            "key_prefix": auth.normalize_api_key(raw)[:12] + "…" if raw else None,
         }
     except ValueError as e:
         code = str(e)
@@ -85,6 +106,8 @@ async def validate_key(
             "valid": False,
             "error": code,
             "hint": auth.invalid_key_hint() if code == "invalid_api_key" else "Send X-API-Key header.",
+            "db": auth.auth_diagnostics(),
+            "key_prefix": auth.normalize_api_key(raw)[:12] + "…" if raw else None,
         }
 
 
