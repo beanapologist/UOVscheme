@@ -20,7 +20,6 @@ from statecert.chain_api import (
 )
 from statecert.chain_api import _fetch_cross_l1_leg  # noqa: PLC2701 — shared leg resolver
 from statecert.state_hash import (
-    ChainState,
     CrossChainStateTransition,
     CrossL1Commitment,
 )
@@ -80,7 +79,9 @@ def issue_solana(
         timeout=timeout,
     )
     v = load_verifier_instance()
-    cert = v.issue_for_solana(sol, new_rng(), metadata={**_md("solana"), **(metadata or {})})
+    cert = v.issue_for_solana(
+        sol, new_rng(), metadata={**_md("solana"), **(metadata or {})}
+    )
     return cert, {"solana_commitment": sol.to_canonical_dict()}
 
 
@@ -97,7 +98,9 @@ def issue_cosmos(
         safe, chain_id=chain_id.strip(), height=height, timeout=timeout
     )
     v = load_verifier_instance()
-    cert = v.issue_for_cosmos(c, new_rng(), metadata={**_md("cosmos"), **(metadata or {})})
+    cert = v.issue_for_cosmos(
+        c, new_rng(), metadata={**_md("cosmos"), **(metadata or {})}
+    )
     return cert, {"cosmos_commitment": c.to_canonical_dict()}
 
 

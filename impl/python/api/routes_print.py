@@ -14,7 +14,9 @@ from .models import CertVerifyRequest
 router = APIRouter(prefix="/api/v1/certs", tags=["Certificates"])
 
 
-@router.post("/print", response_class=HTMLResponse, summary="Printable certificate (HTML)")
+@router.post(
+    "/print", response_class=HTMLResponse, summary="Printable certificate (HTML)"
+)
 async def print_certificate(
     body: CertVerifyRequest,
     autoprint: bool = False,
@@ -57,7 +59,9 @@ async def print_demo_certificate() -> HTMLResponse:
 
     wire = sample_agent_cert_wire()
     try:
-        verified = StateVerifier.verify_certificate(StateCertificate.from_wire_dict(wire))
+        verified = StateVerifier.verify_certificate(
+            StateCertificate.from_wire_dict(wire)
+        )
     except Exception:
         verified = None
     return HTMLResponse(content=render_certificate_html(wire, verified=verified))

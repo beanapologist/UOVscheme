@@ -255,7 +255,9 @@ class EvmChainRequest(BaseModel):
         min_length=8,
         description="Public HTTPS JSON-RPC URL (see GET /api/v1/chains/evm/hints)",
     )
-    block: Any = Field(default="latest", description='Height int, "latest", or "0x…" hex')
+    block: Any = Field(
+        default="latest", description='Height int, "latest", or "0x…" hex'
+    )
     caip2_chain_id: Optional[str] = Field(default=None, examples=["eip155:1"])
     rpc_headers: Optional[Dict[str, str]] = Field(
         default=None,
@@ -307,7 +309,9 @@ class SolanaChainRequest(BaseModel):
 
 
 class SolanaVerifyRequest(SolanaChainRequest):
-    cert: Dict[str, Any] = Field(..., validation_alias=AliasChoices("cert", "certificate"))
+    cert: Dict[str, Any] = Field(
+        ..., validation_alias=AliasChoices("cert", "certificate")
+    )
 
     def wire(self) -> Dict[str, Any]:
         return self.cert
@@ -336,7 +340,9 @@ class CosmosChainRequest(BaseModel):
 
 
 class CosmosVerifyRequest(CosmosChainRequest):
-    cert: Dict[str, Any] = Field(..., validation_alias=AliasChoices("cert", "certificate"))
+    cert: Dict[str, Any] = Field(
+        ..., validation_alias=AliasChoices("cert", "certificate")
+    )
 
     def wire(self) -> Dict[str, Any]:
         return self.cert
@@ -363,7 +369,9 @@ class XrpChainRequest(BaseModel):
 
 
 class XrpVerifyRequest(XrpChainRequest):
-    cert: Dict[str, Any] = Field(..., validation_alias=AliasChoices("cert", "certificate"))
+    cert: Dict[str, Any] = Field(
+        ..., validation_alias=AliasChoices("cert", "certificate")
+    )
 
     def wire(self) -> Dict[str, Any]:
         return self.cert
@@ -398,7 +406,9 @@ class EvmCrossIssueRequest(TwoLegRequest):
 
 
 class EvmCrossVerifyRequest(EvmCrossIssueRequest):
-    cert: Dict[str, Any] = Field(..., validation_alias=AliasChoices("cert", "certificate"))
+    cert: Dict[str, Any] = Field(
+        ..., validation_alias=AliasChoices("cert", "certificate")
+    )
 
     def wire(self) -> Dict[str, Any]:
         return self.cert
@@ -413,7 +423,9 @@ class CrossL1IssueRequest(TwoLegRequest):
 
 
 class CrossL1VerifyRequest(CrossL1IssueRequest):
-    cert: Dict[str, Any] = Field(..., validation_alias=AliasChoices("cert", "certificate"))
+    cert: Dict[str, Any] = Field(
+        ..., validation_alias=AliasChoices("cert", "certificate")
+    )
 
     def wire(self) -> Dict[str, Any]:
         return self.cert

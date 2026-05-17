@@ -6,7 +6,12 @@ from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 
-from statecert import ChainState, StateCertificate, StateVerifier, agent_identity_from_request
+from statecert import (
+    ChainState,
+    StateCertificate,
+    StateVerifier,
+    agent_identity_from_request,
+)
 
 from .app_common import issue_response, load_verifier_instance, new_rng
 from .deps import enforce_issue_quota, require_api_key
@@ -57,7 +62,10 @@ async def issue_agent(
     body: AgentCertIssueRequest = Body(
         ...,
         examples={
-            "demo": {"summary": "Ready to run — click Execute", "value": AGENT_ISSUE_EXAMPLE},
+            "demo": {
+                "summary": "Ready to run — click Execute",
+                "value": AGENT_ISSUE_EXAMPLE,
+            },
         },
     ),
     ctx: dict = Depends(require_api_key),
@@ -161,7 +169,9 @@ async def verify_state_offline(
 
 
 # Legacy paths (aliases)
-@router.post("/api/v1/issue/agent-cert", response_model=CertIssueResponse, include_in_schema=True)
+@router.post(
+    "/api/v1/issue/agent-cert", response_model=CertIssueResponse, include_in_schema=True
+)
 async def legacy_issue_agent(
     body: AgentCertIssueRequest, ctx: dict = Depends(require_api_key)
 ) -> CertIssueResponse:

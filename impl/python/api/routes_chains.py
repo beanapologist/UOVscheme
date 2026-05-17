@@ -67,7 +67,11 @@ async def _verify(fn, **kwargs) -> ChainVerifyResult:
     return ChainVerifyResult(result=ChainVerifyBinding.model_validate(result))
 
 
-@router.post("/evm/issue", response_model=ChainBindingResponse, summary="Fetch EVM block → issue cert")
+@router.post(
+    "/evm/issue",
+    response_model=ChainBindingResponse,
+    summary="Fetch EVM block → issue cert",
+)
 async def evm_issue(
     body: EvmChainRequest = Body(
         ...,
@@ -89,8 +93,14 @@ async def evm_issue(
     )
 
 
-@router.post("/evm/verify", response_model=ChainVerifyResult, summary="Verify cert against live EVM RPC")
-async def evm_verify(body: EvmVerifyRequest, _ctx: dict = Depends(require_api_key)) -> ChainVerifyResult:
+@router.post(
+    "/evm/verify",
+    response_model=ChainVerifyResult,
+    summary="Verify cert against live EVM RPC",
+)
+async def evm_verify(
+    body: EvmVerifyRequest, _ctx: dict = Depends(require_api_key)
+) -> ChainVerifyResult:
     return await _verify(
         chain_ops.verify_evm,
         rpc_url=body.rpc_url,
@@ -164,7 +174,9 @@ async def cosmos_verify(
 
 
 @router.post("/xrp/issue", response_model=ChainBindingResponse)
-async def xrp_issue(body: XrpChainRequest, ctx: dict = Depends(require_api_key)) -> ChainBindingResponse:
+async def xrp_issue(
+    body: XrpChainRequest, ctx: dict = Depends(require_api_key)
+) -> ChainBindingResponse:
     return await _issue(
         chain_ops.issue_xrp,
         ctx,
@@ -177,7 +189,9 @@ async def xrp_issue(body: XrpChainRequest, ctx: dict = Depends(require_api_key))
 
 
 @router.post("/xrp/verify", response_model=ChainVerifyResult)
-async def xrp_verify(body: XrpVerifyRequest, _ctx: dict = Depends(require_api_key)) -> ChainVerifyResult:
+async def xrp_verify(
+    body: XrpVerifyRequest, _ctx: dict = Depends(require_api_key)
+) -> ChainVerifyResult:
     return await _verify(
         chain_ops.verify_xrp,
         rpc_url=body.rpc_url,
@@ -242,4 +256,3 @@ async def cross_l1_verify(
         policy=body.policy,
         timeout=body.timeout,
     )
-

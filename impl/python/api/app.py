@@ -54,6 +54,7 @@ def _html_page(name: str) -> FileResponse:
         },
     )
 
+
 _DEV_KEY_HINT = os.environ.get("SILENTVERIFY_DEV_API_KEY", "sv_dev_test_key")
 
 
@@ -72,9 +73,18 @@ app = FastAPI(
     redoc_url=None,
     openapi_tags=[
         {"name": "Getting started", "description": "Health, params, chain catalog"},
-        {"name": "Agent PKI", "description": "Issue & verify agent identity certificates"},
-        {"name": "Chains", "description": "Fetch live anchor + issue, or verify cert on-chain"},
-        {"name": "Chains (legacy paths)", "description": "Same as Chains; old `/api/v1/evm/...` URLs"},
+        {
+            "name": "Agent PKI",
+            "description": "Issue & verify agent identity certificates",
+        },
+        {
+            "name": "Chains",
+            "description": "Fetch live anchor + issue, or verify cert on-chain",
+        },
+        {
+            "name": "Chains (legacy paths)",
+            "description": "Same as Chains; old `/api/v1/evm/...` URLs",
+        },
         {"name": "Billing", "description": "Free keys, Stripe Checkout, usage"},
     ],
 )
@@ -93,13 +103,17 @@ async def validation_error_handler(_request: Request, exc: RequestValidationErro
                 "Request body is missing or not JSON. Use the pre-filled Example Value in Swagger, not the generic schema placeholders."
             )
         elif "agent_did" in loc:
-            hints.append("Set agent_did (e.g. did:example:acme-agent-7), not the literal word 'string'.")
+            hints.append(
+                "Set agent_did (e.g. did:example:acme-agent-7), not the literal word 'string'."
+            )
         elif loc in ("body.cert", "cert", "body.certificate"):
             hints.append(
                 "Verify routes need the full cert object from a prior POST …/issue response — run Issue first, then paste the cert field."
             )
         elif "rpc_url" in loc:
-            hints.append("Set rpc_url to a public HTTPS endpoint (see GET /api/v1/chains/evm/hints).")
+            hints.append(
+                "Set rpc_url to a public HTTPS endpoint (see GET /api/v1/chains/evm/hints)."
+            )
     detail = {"errors": exc.errors()}
     if hints:
         detail["hints"] = list(dict.fromkeys(hints))
@@ -166,6 +180,7 @@ def _custom_openapi():
 
 
 app.openapi = _custom_openapi  # type: ignore[method-assign]
+
 
 @app.get("/", include_in_schema=False)
 async def landing_page():

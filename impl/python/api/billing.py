@@ -11,7 +11,9 @@ from . import auth
 _STRIPE_SECRET = os.environ.get("STRIPE_SECRET_KEY", "").strip()
 _STRIPE_WEBHOOK = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
 _STRIPE_PRICE = os.environ.get("STRIPE_PRICE_ID", "").strip()
-_PUBLIC_URL = os.environ.get("SILENTVERIFY_PUBLIC_URL", "http://127.0.0.1:8765").rstrip("/")
+_PUBLIC_URL = os.environ.get("SILENTVERIFY_PUBLIC_URL", "http://127.0.0.1:8765").rstrip(
+    "/"
+)
 
 
 def stripe_enabled() -> bool:

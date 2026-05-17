@@ -18,7 +18,9 @@ def _fmt_digest(y: List[int]) -> str:
     return ", ".join(str(i) for i in y[:8]) + ("…" if len(y) > 8 else "")
 
 
-def render_certificate_html(cert: Dict[str, Any], *, verified: Optional[bool] = None) -> str:
+def render_certificate_html(
+    cert: Dict[str, Any], *, verified: Optional[bool] = None
+) -> str:
     """Return a print-friendly HTML page for a certificate wire object."""
     meta = cert.get("metadata") or {}
     if not isinstance(meta, dict):
@@ -27,7 +29,9 @@ def render_certificate_html(cert: Dict[str, Any], *, verified: Optional[bool] = 
     cert_type = meta.get("cert_type", meta.get("flow", "state"))
     expires = meta.get("expires_at_unix")
     expires_s = (
-        datetime.fromtimestamp(int(expires), tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        datetime.fromtimestamp(int(expires), tz=timezone.utc).strftime(
+            "%Y-%m-%d %H:%M UTC"
+        )
         if expires is not None
         else "—"
     )
@@ -47,7 +51,7 @@ def render_certificate_html(cert: Dict[str, Any], *, verified: Optional[bool] = 
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>SilentVerify Certificate — {_esc(agent_did if cert_type == 'agent' else cert_type)}</title>
+  <title>SilentVerify Certificate — {_esc(agent_did if cert_type == "agent" else cert_type)}</title>
   <link rel="icon" href="/static/silentverify-logo.png" type="image/png" />
   <style>
     :root {{

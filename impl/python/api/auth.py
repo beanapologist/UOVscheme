@@ -108,7 +108,10 @@ def init_db() -> None:
 
 def _load_runtime_from_db(conn: sqlite3.Connection) -> None:
     for row in conn.execute("SELECT key_hash, tier, monthly_quota FROM api_keys"):
-        _runtime_keys[str(row["key_hash"])] = (str(row["tier"]), int(row["monthly_quota"]))
+        _runtime_keys[str(row["key_hash"])] = (
+            str(row["tier"]),
+            int(row["monthly_quota"]),
+        )
 
 
 def _migrate_schema(conn: sqlite3.Connection) -> None:

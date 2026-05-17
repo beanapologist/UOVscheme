@@ -53,11 +53,17 @@ async def redeem_checkout_session(session_id: str) -> Dict[str, Any]:
     except ValueError as e:
         code = str(e)
         if code == "unknown_session":
-            raise HTTPException(status_code=404, detail="Unknown checkout session") from e
+            raise HTTPException(
+                status_code=404, detail="Unknown checkout session"
+            ) from e
         if code == "session_not_ready":
-            raise HTTPException(status_code=409, detail="Payment not completed yet") from e
+            raise HTTPException(
+                status_code=409, detail="Payment not completed yet"
+            ) from e
         if code == "already_revealed":
-            raise HTTPException(status_code=410, detail="API key already retrieved") from e
+            raise HTTPException(
+                status_code=410, detail="API key already retrieved"
+            ) from e
         raise HTTPException(status_code=400, detail=code) from e
 
 
@@ -72,7 +78,9 @@ async def stripe_webhook(request: Request) -> Dict[str, Any]:
     except Exception as e:
         msg = str(e)
         if "signature" in msg.lower():
-            raise HTTPException(status_code=400, detail="invalid_stripe_signature") from e
+            raise HTTPException(
+                status_code=400, detail="invalid_stripe_signature"
+            ) from e
         raise HTTPException(status_code=400, detail=f"webhook_error: {msg}") from e
 
 
@@ -105,7 +113,9 @@ async def validate_key(
         return {
             "valid": False,
             "error": code,
-            "hint": auth.invalid_key_hint() if code == "invalid_api_key" else "Send X-API-Key header.",
+            "hint": auth.invalid_key_hint()
+            if code == "invalid_api_key"
+            else "Send X-API-Key header.",
             "db": auth.auth_diagnostics(),
             "key_prefix": auth.normalize_api_key(raw)[:12] + "…" if raw else None,
         }

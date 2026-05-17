@@ -43,7 +43,9 @@ def require_api_key(
         if code == "missing_api_key":
             raise HTTPException(
                 status_code=401,
-                detail=error_detail(error="missing_api_key", message="X-API-Key header required"),
+                detail=error_detail(
+                    error="missing_api_key", message="X-API-Key header required"
+                ),
             ) from e
         raise HTTPException(
             status_code=403,

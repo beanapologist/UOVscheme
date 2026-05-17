@@ -72,7 +72,11 @@ def map_chain_error(exc: Exception) -> HTTPException:
         )
     return HTTPException(
         status_code=500,
-        detail=error_detail(error="internal", message=msg, hint="Unexpected server error — retry or open a GitHub issue with the request id."),
+        detail=error_detail(
+            error="internal",
+            message=msg,
+            hint="Unexpected server error — retry or open a GitHub issue with the request id.",
+        ),
     )
 
 
@@ -160,7 +164,8 @@ def params_payload() -> Dict[str, Any]:
         **recommended_params(),
         "auth": {
             "production": prod,
-            "dev_key_enabled": not prod or bool(os.environ.get("SILENTVERIFY_API_KEYS", "").strip()),
+            "dev_key_enabled": not prod
+            or bool(os.environ.get("SILENTVERIFY_API_KEYS", "").strip()),
             "persistent_api_key_db": auth.db_is_configured_persistent(),
             "free_key_url": "/api/v1/billing/free-key",
         },
