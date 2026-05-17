@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SilentVerify — Agent PKI &amp; chain state certificates</title>
+  <link rel="icon" href="/static/silentverify-logo.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0e14;
+      --surface: #121820;
+      --border: #1e2a3a;
+      --text: #e8eef4;
+      --muted: #8b9cb3;
+      --accent: #3d9cf5;
+      --accent-dim: #2563a8;
+      --green: #34d399;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .glow {
+      position: fixed;
+      width: 55vw;
+      height: 55vw;
+      max-width: 560px;
+      max-height: 560px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glow-a { top: -18%; right: -8%; background: radial-gradient(circle, rgba(61,156,245,.14) 0%, transparent 70%); }
+    .glow-b { left: -12%; top: 45%; background: radial-gradient(circle, rgba(52,211,153,.07) 0%, transparent 70%); }
+    .wrap { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 4rem; }
+    .logo { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+    nav a { color: var(--muted); text-decoration: none; margin-left: 1.5rem; font-size: 0.95rem; }
+    nav a:hover { color: var(--text); }
+    .hero { margin-bottom: 4rem; }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; max-width: 20ch; margin-bottom: 1rem; }
+    .hero p { color: var(--muted); font-size: 1.15rem; max-width: 44ch; }
+    .badges { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.5rem; }
+    .badge { font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 3rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.75rem; display: flex; flex-direction: column; }
+    .card.featured { border-color: var(--accent-dim); box-shadow: 0 0 0 1px rgba(61,156,245,.2); }
+    .card h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .price { font-size: 2rem; font-weight: 700; margin: 0.75rem 0; }
+    .price small { font-size: 0.9rem; font-weight: 400; color: var(--muted); }
+    .card ul { list-style: none; margin: 1rem 0 1.5rem; flex: 1; }
+    .card li { color: var(--muted); font-size: 0.9rem; padding: 0.35rem 0 0.35rem 1.25rem; position: relative; }
+    .card li::before { content: "✓"; position: absolute; left: 0; color: var(--green); }
+    button, .btn { font-family: inherit; font-size: 0.95rem; font-weight: 600; padding: 0.75rem 1.25rem; border-radius: 10px; border: none; cursor: pointer; text-align: center; text-decoration: none; display: inline-block; transition: transform .15s; }
+    button:hover, .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--accent); color: #fff; width: 100%; }
+    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); width: 100%; }
+    .chains h2 { font-size: 1.25rem; margin-bottom: 1rem; }
+    .chain-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .chain-pills span { font-family: "JetBrains Mono", monospace; font-size: 0.75rem; padding: 0.4rem 0.7rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); }
+    #toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(120%); background: var(--surface); border: 1px solid var(--border); padding: 1rem 1.5rem; border-radius: 12px; max-width: 90vw; font-size: 0.9rem; z-index: 100; transition: transform .3s; }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #key-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 50; align-items: center; justify-content: center; padding: 1rem; }
+    #key-modal.open { display: flex; }
+    .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; max-width: 480px; width: 100%; }
+    .modal-box p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; }
+    code.key { display: block; font-family: "JetBrains Mono", monospace; font-size: 0.8rem; background: var(--bg); padding: 1rem; border-radius: 8px; word-break: break-all; border: 1px solid var(--border); margin-bottom: 1rem; }
+    footer { color: var(--muted); font-size: 0.85rem; text-align: center; padding-top: 2rem; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <div class="glow glow-a" aria-hidden="true"></div>
+  <div class="glow glow-b" aria-hidden="true"></div>
+  <div class="wrap">
+    <header>
+      <div class="logo"><img src="/static/silentverify-logo.png" alt="" height="40" style="vertical-align:middle;margin-right:8px" />Silent<span>Verify</span></div>
+      <nav>
+        <a href="/docs">Try API</a>
+        <a href="/redoc">Reference</a>
+        <a href="/swagger">Swagger</a>
+        <a href="https://github.com/beanapologist/UOVscheme" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </header>
+    <section class="hero">
+      <h1>Post-quantum certificates for agents &amp; chain state</h1>
+      <p>Issue and verify UOV-backed agent identity certs and live-anchored state proofs across EVM, Solana, Cosmos, and XRPL.</p>
+      <div class="badges">
+        <span class="badge">Agent PKI</span>
+        <span class="badge">Multi-chain anchors</span>
+        <span class="badge">REST + OpenAPI</span>
+      </div>
+    </section>
+    <section class="grid">
+      <article class="card">
+        <h3>Free</h3>
+        <div class="price">$0 <small>/ month</small></div>
+        <ul>
+          <li>100 issuances / month</li>
+          <li>Agent + state certificates</li>
+          <li>All chain verify routes</li>
+        </ul>
+        <button type="button" class="btn-primary" id="btn-free">Get free API key</button>
+      </article>
+      <article class="card featured">
+        <h3>Pro</h3>
+        <div class="price">$9 <small>/ month</small></div>
+        <ul>
+          <li>High volume quota</li>
+          <li>Production UOV profile on Railway</li>
+          <li>Stripe billing</li>
+        </ul>
+        <button type="button" class="btn-primary" id="btn-pro">Subscribe with Stripe</button>
+      </article>
+      <article class="card">
+        <h3>Developers</h3>
+        <div class="price" style="font-size:1.25rem">Self-host</div>
+        <ul>
+          <li>Open source Lean + Python</li>
+          <li>Railway-ready deploy</li>
+          <li>Bring your own RPC keys</li>
+        </ul>
+        <a class="btn btn-ghost" href="/docs">Try API</a>
+      </article>
+    </section>
+    <section class="chains">
+      <h2>Supported chains</h2>
+      <div class="chain-pills" id="chain-pills"></div>
+    </section>
+    <footer>SilentVerify · UOV prime-field reference</footer>
+  </div>
+  <div id="key-modal" role="dialog">
+    <div class="modal-box">
+      <h2>Your API key</h2>
+      <p>Copy now — we only show it once. Use header <strong>X-API-Key</strong> in /docs.</p>
+      <code class="key" id="modal-key"></code>
+      <button type="button" class="btn-primary" id="btn-copy">Copy to clipboard</button>
+      <button type="button" class="btn-ghost" style="margin-top:.5rem" id="btn-close">Close</button>
+    </div>
+  </div>
+  <div id="toast" role="status"></div>
+  <script>
+    const toast = document.getElementById('toast');
+    const modal = document.getElementById('key-modal');
+    const modalKey = document.getElementById('modal-key');
+    function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 4000); }
+    function showKey(key) { modalKey.textContent = key; modal.classList.add('open'); }
+    document.getElementById('btn-close').onclick = () => modal.classList.remove('open');
+    document.getElementById('btn-copy').onclick = () => { navigator.clipboard.writeText(modalKey.textContent); showToast('Copied'); };
+    async function post(path) {
+      const r = await fetch(path, { method: 'POST' });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail || r.statusText));
+      return data;
+    }
+    document.getElementById('btn-free').onclick = async () => {
+      try { showKey((await post('/api/v1/billing/free-key')).api_key); }
+      catch (e) { showToast(e.message); }
+    };
+    document.getElementById('btn-pro').onclick = async () => {
+      try {
+        const data = await post('/api/v1/billing/checkout');
+        if (data.checkout_url) location.href = data.checkout_url;
+      } catch (e) { showToast(e.message); }
+    };
+    const params = new URLSearchParams(location.search);
+    if (params.get('checkout') === 'success' && params.get('session_id')) {
+      fetch('/api/v1/billing/session/' + encodeURIComponent(params.get('session_id')))
+        .then(r => r.json()).then(d => d.api_key ? showKey(d.api_key) : showToast(d.detail || 'Confirming payment…'))
+        .catch(() => showToast('Refresh shortly after payment'));
+    }
+    fetch('/api/v1/chains').then(r => r.json()).then(d => {
+      const el = document.getElementById('chain-pills');
+      if (d.chains) el.innerHTML = d.chains.map(c => `<span>${c.label || c.id}</span>`).join('');
+    }).catch(() => {});
+  </script>
+</body>
+</html>

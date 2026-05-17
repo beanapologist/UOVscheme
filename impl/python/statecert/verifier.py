@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from uov.certificate import issue_digest_certificate, public_key_wire
 from uov.scheme import UOVKey
 
+from .agent import AgentIdentity, agent_identity_to_digest
 from .certificate import StateCertificate, fingerprint_public_key
 from .state_hash import (
     ChainAnchor,
@@ -76,6 +77,25 @@ class StateVerifier:
 
     def digest_for_intra_chain(self, prev: ChainState, nxt: ChainState) -> List[int]:
         return intra_chain_transition_to_digest(self._key.q, self._key.o, prev, nxt)
+
+    def digest_for_agent(self, identity: AgentIdentity) -> List[int]:
+        return agent_identity_to_digest(self._key.q, self._key.o, identity)
+
+    def issue_for_agent(
+        self,
+        identity: AgentIdentity,
+        rng,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> StateCertificate:
+        md = {
+            "flow": "agent_pki",
+            "cert_type": "agent",
+            "agent_did": identity.agent_did,
+            **(metadata or {}),
+        }
+        if identity.expires_at_unix is not None:
+            md["expires_at_unix"] = identity.expires_at_unix
+        return self.issue_on_digest(self.digest_for_agent(identity), rng, md)
 
     def issue_on_digest(
         self, digest_y: List[int], rng, metadata: Optional[Dict[str, Any]] = None

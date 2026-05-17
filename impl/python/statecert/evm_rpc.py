@@ -11,7 +11,7 @@ Only **public** RPC URLs (no secrets in query strings you would log) are recomme
 
 from __future__ import annotations
 
-from typing import Union
+from typing import Dict, Optional, Union
 
 from .jsonrpc import jsonrpc_call
 from .state_hash import ChainState
@@ -42,6 +42,7 @@ def fetch_chain_state_evm(
     block: BlockArg = "latest",
     caip2_chain_id: str | None = None,
     timeout: float = 30.0,
+    rpc_headers: Optional[Dict[str, str]] = None,
 ) -> ChainState:
     """Return :class:`ChainState` for ``block`` using ``stateRoot`` from the node.
 
@@ -49,14 +50,20 @@ def fetch_chain_state_evm(
     ``eip155:<id>``. Pass it explicitly to skip that call (must match the RPC network).
     """
     if caip2_chain_id is None:
-        raw_id = jsonrpc_call(rpc_url, "eth_chainId", [], timeout=timeout)
+        raw_id = jsonrpc_call(
+            rpc_url, "eth_chainId", [], timeout=timeout, headers=rpc_headers
+        )
         if not isinstance(raw_id, str) or not raw_id.startswith("0x"):
             raise ValueError(f"unexpected eth_chainId payload: {raw_id!r}")
         caip2_chain_id = f"eip155:{int(raw_id, 16)}"
 
     block_param = _block_to_param(block)
     blk = jsonrpc_call(
-        rpc_url, "eth_getBlockByNumber", [block_param, False], timeout=timeout
+        rpc_url,
+        "eth_getBlockByNumber",
+        [block_param, False],
+        timeout=timeout,
+        headers=rpc_headers,
     )
     if not isinstance(blk, dict):
         raise ValueError(f"unexpected getBlock result type: {type(blk).__name__}")

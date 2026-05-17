@@ -1,5 +1,6 @@
 """State certificate pipeline: chain state → field digest → UOV certificate → verify."""
 
+from .agent import AgentIdentity, agent_identity_from_request, agent_identity_to_digest
 from .certificate import StateCertificate, fingerprint_public_key
 from .cosmos_rpc import fetch_cosmos_commitment
 from .crt_bridge import CRTBridge
@@ -28,6 +29,9 @@ from .verifier import StateVerifier
 from .xrp_rpc import fetch_xrp_ledger_commitment
 
 __all__ = [
+    "AgentIdentity",
+    "agent_identity_from_request",
+    "agent_identity_to_digest",
     "ChainAnchor",
     "ChainState",
     "CosmosCommitment",

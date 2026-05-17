@@ -119,6 +119,7 @@ class TestVerifyEvmCertAgainstChain:
             block,
             caip2_chain_id=None,
             timeout: float = 30.0,
+            **_,
         ):
             assert "example.com" in url
             assert block == "latest"
@@ -175,7 +176,7 @@ class TestCrossChainEvmTransition:
         wire = cert.to_wire_dict()
         calls = []
 
-        def fake_fetch(url, *, block, caip2_chain_id=None, timeout: float = 30.0):
+        def fake_fetch(url, *, block, caip2_chain_id=None, timeout: float = 30.0, **_):
             calls.append((url, block, caip2_chain_id))
             if "eth-a" in url:
                 assert block == "finalized"
@@ -235,7 +236,7 @@ class TestCrossL1Commitment:
         wire = cert.to_wire_dict()
         calls: list = []
 
-        def fake_evm(url, *, block, caip2_chain_id=None, timeout: float = 30.0):
+        def fake_evm(url, *, block, caip2_chain_id=None, timeout: float = 30.0, **_):
             calls.append(("evm", url, block))
             assert "eth-l1" in url
             return ev
@@ -276,7 +277,7 @@ class TestEvmDepthPolicy:
     def test_enforce_depth_passes(self, monkeypatch):
         src = ChainState("eip155:1", 100, "0x" + "ee" * 32)
 
-        def fake_jsonrpc(url, method, params, *, timeout: float = 30.0):
+        def fake_jsonrpc(url, method, params, *, timeout: float = 30.0, **_):
             assert method == "eth_blockNumber"
             return "0x6a"  # 106 → depth 6
 
@@ -288,7 +289,7 @@ class TestEvmDepthPolicy:
     def test_enforce_depth_fails(self, monkeypatch):
         src = ChainState("eip155:1", 104, "0x" + "ee" * 32)
 
-        def fake_jsonrpc(url, method, params, *, timeout: float = 30.0):
+        def fake_jsonrpc(url, method, params, *, timeout: float = 30.0, **_):
             return "0x6a"  # 106 → depth 2
 
         monkeypatch.setattr(chain_api_mod, "jsonrpc_call", fake_jsonrpc)
@@ -304,10 +305,10 @@ class TestEvmDepthPolicy:
         cert = v.issue_for_chain_state(cs, _rng(15))
         wire = cert.to_wire_dict()
 
-        def fake_fetch(url, *, block, caip2_chain_id=None, timeout: float = 30.0):
+        def fake_fetch(url, *, block, caip2_chain_id=None, timeout: float = 30.0, **_):
             return cs
 
-        def fake_jsonrpc(url, method, params, *, timeout: float = 30.0):
+        def fake_jsonrpc(url, method, params, *, timeout: float = 30.0, **_):
             return "0x3f7"  # 1015 → depth 15
 
         monkeypatch.setattr(chain_api_mod, "fetch_chain_state_evm", fake_fetch)

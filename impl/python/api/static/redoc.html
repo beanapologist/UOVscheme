@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SilentVerify API — Reference</title>
+  <link rel="icon" href="/static/silentverify-logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    body { margin: 0; padding: 0; background: #0a0e14; }
+    .sv-bar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 24px; background: #121820; border-bottom: 1px solid #1e2a3a;
+      font-family: 'DM Sans', system-ui, sans-serif;
+    }
+    .sv-bar img { width: 32px; height: 32px; }
+    .sv-bar a { color: #8b9cb3; text-decoration: none; margin-left: 1rem; font-size: 0.9rem; }
+    .sv-bar a:hover { color: #3d9cf5; }
+    .sv-bar .spacer { flex: 1; }
+    .sv-bar strong { color: #e8eef4; font-size: 1rem; }
+    .sv-bar strong span { color: #3d9cf5; }
+  </style>
+</head>
+<body>
+  <div class="sv-bar">
+    <img src="/static/silentverify-logo.png" alt="SilentVerify" height="40" />
+    <strong>Silent<span>Verify</span> API</strong>
+    <span class="spacer"></span>
+    <a href="/">Home</a>
+    <a href="/docs">Try API</a>
+    <a href="/swagger">Swagger</a>
+  </div>
+  <div id="redoc"></div>
+  <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+  <script>
+    Redoc.init('/openapi.json', {
+      theme: {
+        colors: {
+          primary: { main: '#3d9cf5' },
+          success: { main: '#34d399' },
+          text: { primary: '#e8eef4', secondary: '#8b9cb3' },
+          http: { get: '#3d9cf5', post: '#34d399', put: '#fbbf24', delete: '#f87171' },
+        },
+        typography: {
+          fontFamily: 'DM Sans, system-ui, sans-serif',
+          code: { fontFamily: 'JetBrains Mono, monospace' },
+          headings: { fontFamily: 'DM Sans, system-ui, sans-serif' },
+        },
+        sidebar: { backgroundColor: '#121820', textColor: '#8b9cb3', activeTextColor: '#e8eef4' },
+        rightPanel: { backgroundColor: '#0a0e14' },
+      },
+      scrollYOffset: 56,
+    }, document.getElementById('redoc'));
+  </script>
+</body>
+</html>

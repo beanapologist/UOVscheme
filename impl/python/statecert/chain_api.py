@@ -115,6 +115,7 @@ def enforce_evm_min_confirmations_behind_tip(
     min_confirmations: int,
     *,
     timeout: float = 30.0,
+    rpc_headers: Optional[Dict[str, str]] = None,
 ) -> None:
     """Require ``eth_blockNumber - state.block_height >= min_confirmations`` (same RPC).
 
@@ -123,7 +124,9 @@ def enforce_evm_min_confirmations_behind_tip(
     """
     if min_confirmations <= 0:
         return
-    raw = jsonrpc_call(rpc_url, "eth_blockNumber", [], timeout=timeout)
+    raw = jsonrpc_call(
+        rpc_url, "eth_blockNumber", [], timeout=timeout, headers=rpc_headers
+    )
     if not isinstance(raw, str) or not raw.startswith("0x"):
         raise ValueError(f"unexpected eth_blockNumber payload: {raw!r}")
     tip = int(raw, 16)
@@ -141,6 +144,7 @@ def _policy_evm_depth(
     policy: Optional[Dict[str, Any]],
     *,
     timeout: float,
+    rpc_headers: Optional[Dict[str, str]] = None,
 ) -> None:
     if not policy:
         return
@@ -153,7 +157,9 @@ def _policy_evm_depth(
         raise ValueError(
             "policy.min_confirmations_behind_tip must be a non-negative int"
         )
-    enforce_evm_min_confirmations_behind_tip(rpc_url, state, n, timeout=timeout)
+    enforce_evm_min_confirmations_behind_tip(
+        rpc_url, state, n, timeout=timeout, rpc_headers=rpc_headers
+    )
 
 
 def verify_evm_state_certificate_via_rpc(
@@ -164,6 +170,7 @@ def verify_evm_state_certificate_via_rpc(
     caip2_chain_id: Optional[str] = None,
     policy: Optional[Dict[str, Any]] = None,
     timeout: float = 30.0,
+    rpc_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     safe_url = validate_public_rpc_url(rpc_url)
     state = fetch_chain_state_evm(
@@ -171,8 +178,11 @@ def verify_evm_state_certificate_via_rpc(
         block=block,
         caip2_chain_id=caip2_chain_id,
         timeout=timeout,
+        rpc_headers=rpc_headers,
     )
-    _policy_evm_depth(safe_url, state, policy, timeout=timeout)
+    _policy_evm_depth(
+        safe_url, state, policy, timeout=timeout, rpc_headers=rpc_headers
+    )
     return verify_evm_state_certificate_against_chain(certificate_wire, state)
 
 
@@ -230,21 +240,29 @@ def verify_cross_chain_state_transition_via_rpc(
     if d_caip is not None and not isinstance(d_caip, str):
         raise ValueError("dst.caip2_chain_id must be a string or omitted")
 
+    s_hdr = src.get("rpc_headers") if isinstance(src.get("rpc_headers"), dict) else None
+    d_hdr = dst.get("rpc_headers") if isinstance(dst.get("rpc_headers"), dict) else None
     src_state = fetch_chain_state_evm(
         s_url,
         block=s_block,
         caip2_chain_id=s_caip,
         timeout=timeout,
+        rpc_headers=s_hdr,
     )
     dst_state = fetch_chain_state_evm(
         d_url,
         block=d_block,
         caip2_chain_id=d_caip,
         timeout=timeout,
+        rpc_headers=d_hdr,
     )
     pol = policy if isinstance(policy, dict) else None
-    _policy_evm_depth(s_url, src_state, _policy_leg_dict(pol, "src"), timeout=timeout)
-    _policy_evm_depth(d_url, dst_state, _policy_leg_dict(pol, "dst"), timeout=timeout)
+    _policy_evm_depth(
+        s_url, src_state, _policy_leg_dict(pol, "src"), timeout=timeout, rpc_headers=s_hdr
+    )
+    _policy_evm_depth(
+        d_url, dst_state, _policy_leg_dict(pol, "dst"), timeout=timeout, rpc_headers=d_hdr
+    )
     return verify_cross_chain_state_transition_against_pair(
         certificate_wire, src_state, dst_state
     )
@@ -280,10 +298,15 @@ def _fetch_cross_l1_leg(
         caip = leg.get("caip2_chain_id")
         if caip is not None and not isinstance(caip, str):
             raise ValueError(f"{side}.caip2_chain_id must be a string or omitted")
+        hdr = leg.get("rpc_headers") if isinstance(leg.get("rpc_headers"), dict) else None
         state = fetch_chain_state_evm(
-            url, block=block, caip2_chain_id=caip, timeout=timeout
+            url,
+            block=block,
+            caip2_chain_id=caip,
+            timeout=timeout,
+            rpc_headers=hdr,
         )
-        _policy_evm_depth(url, state, policy_leg, timeout=timeout)
+        _policy_evm_depth(url, state, policy_leg, timeout=timeout, rpc_headers=hdr)
         return state
 
     if kind == "solana":

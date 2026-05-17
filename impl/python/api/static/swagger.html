@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SilentVerify API — Swagger (advanced)</title>
+  <link rel="icon" href="/static/silentverify-logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+  <style>
+    body { margin: 0; font-family: 'DM Sans', system-ui, sans-serif; }
+    .sv-banner {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 10px 20px; background: #1a2d4a; color: #f7f6f3;
+      font-size: 0.9rem;
+    }
+    .sv-banner img { height: 36px; }
+    .sv-banner a { color: #f7f6f3; opacity: 0.9; margin-left: auto; text-decoration: none; }
+    .sv-banner a:hover { opacity: 1; text-decoration: underline; }
+    .sv-banner strong { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="sv-banner">
+    <img src="/static/silentverify-logo.png" alt="" />
+    <span><strong>Advanced mode.</strong> Prefer the step-by-step console?</span>
+    <a href="/docs">Open Try API →</a>
+    <a href="/redoc">Reference</a>
+    <a href="/">Home</a>
+  </div>
+  <div id="swagger-ui"></div>
+  <link rel="stylesheet" href="/static/swagger-theme.css?v=20260516" />
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    window.ui = SwaggerUIBundle({
+      url: '/openapi.json',
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      persistAuthorization: true,
+      docExpansion: 'list',
+      tryItOutEnabled: true,
+      defaultModelsExpandDepth: 0,
+      displayRequestDuration: true,
+      layout: 'BaseLayout',
+    });
+  </script>
+</body>
+</html>
