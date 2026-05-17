@@ -164,6 +164,7 @@ def render_certificate_html(cert: Dict[str, Any], *, verified: Optional[bool] = 
     <p class="foot">
       Verify online at your SilentVerify deployment. This document is a human-readable summary;
       the JSON block is the authoritative certificate for APIs and on-chain tooling.
+      <br />A product of COINjecture Network LLC
     </p>
   </div>
   <script>

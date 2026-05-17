@@ -6,7 +6,7 @@ Production deployment uses **real UOV signing** (`SILENTVERIFY_UOV_PROFILE=I_MIN
 
 1. [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo** → `beanapologist/UOVscheme`.
 2. Set **Root Directory** to `impl/python`.
-3. Railway reads `railway.json` and runs `uvicorn api.app:app`.
+3. Railway reads `railway.json`; Nixpacks installs Python from `requirements.txt` (→ `requirements-saas.txt`) and runs `uvicorn api.app:app`.
 
 ## 2. Required variables
 

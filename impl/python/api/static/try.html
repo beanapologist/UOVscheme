@@ -166,6 +166,14 @@
     }
     .use-card .steps li { margin-bottom: 0.25rem; }
     .use-card .btn { width: 100%; }
+    .site-footer {
+      text-align: center;
+      padding: 1.5rem 1rem 2rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
   </style>
 </head>
 <body>
@@ -328,6 +336,7 @@
     <p id="status" class="status" hidden></p>
     <pre id="output" class="out empty" style="margin-top:1rem">Results appear here after you run an action.</pre>
   </main>
+  <footer class="site-footer">A product of COINjecture Network LLC</footer>
   <script>
     const KEY = 'sv_api_key';
     const LAST_CERT = 'sv_last_cert';

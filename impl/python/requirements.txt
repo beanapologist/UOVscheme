@@ -1,0 +1,2 @@
+# Production deps for Railway / Nixpacks (see requirements-saas.txt)
+-r requirements-saas.txt

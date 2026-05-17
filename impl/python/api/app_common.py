@@ -71,6 +71,8 @@ _DEV_KEY = os.environ.get("SILENTVERIFY_DEV_API_KEY", "sv_dev_test_key")
 def api_description() -> str:
     return f"""SilentVerify — **Agent PKI** + **chain-anchored state certificates** (UOV).
 
+*A product of COINjecture Network LLC*
+
 ### Quick start (Swagger)
 1. Click **Authorize** → paste API key: `{_DEV_KEY}`
 2. Try **Agent PKI → Issue agent cert** with the pre-filled example

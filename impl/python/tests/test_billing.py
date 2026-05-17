@@ -56,3 +56,4 @@ def test_landing_page(client):
     r = client.get("/")
     assert r.status_code == 200
     assert "SilentVerify" in r.text
+    assert "COINjecture Network LLC" in r.text
