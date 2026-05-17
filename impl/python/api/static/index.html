@@ -75,6 +75,24 @@
     code.key { display: block; font-family: "JetBrains Mono", monospace; font-size: 0.8rem; background: var(--bg); padding: 1rem; border-radius: 8px; word-break: break-all; border: 1px solid var(--border); margin-bottom: 1rem; }
     footer { color: var(--muted); font-size: 0.85rem; text-align: center; padding-top: 2rem; border-top: 1px solid var(--border); }
     footer .attribution { display: block; margin-top: 0.35rem; font-size: 0.8rem; opacity: 0.85; }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.75rem; }
+    .hero-cta .btn-primary, .hero-cta .btn-ghost { width: auto; min-width: 10rem; }
+    .flow { margin-bottom: 3rem; }
+    .flow h2, .why h2 { font-size: 1.25rem; margin-bottom: 1rem; }
+    .flow-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
+    .flow-step { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; text-align: center; }
+    .flow-step .num { display: inline-flex; width: 2rem; height: 2rem; align-items: center; justify-content: center; border-radius: 50%; background: var(--accent-dim); color: #fff; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .flow-step strong { display: block; font-size: 0.95rem; margin-bottom: 0.25rem; }
+    .flow-step span { color: var(--muted); font-size: 0.8rem; }
+    .flow-arrow { display: none; }
+    @media (min-width: 700px) {
+      .flow-steps { grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; }
+      .flow-arrow { display: block; color: var(--muted); font-size: 1.25rem; text-align: center; }
+    }
+    .why { margin-bottom: 3rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.75rem; }
+    .why p { color: var(--muted); max-width: 65ch; margin-bottom: 0.75rem; }
+    .why ul { color: var(--muted); font-size: 0.9rem; padding-left: 1.25rem; margin: 0.5rem 0 1rem; }
+    .why a { color: var(--accent); }
   </style>
 </head>
 <body>
@@ -96,8 +114,49 @@
       <div class="badges">
         <span class="badge">Agent PKI</span>
         <span class="badge">Multi-chain anchors</span>
-        <span class="badge">REST + OpenAPI</span>
+        <span class="badge">Lean 4 verified core</span>
       </div>
+      <div class="hero-cta">
+        <button type="button" class="btn-primary" id="btn-demo">Try live demo</button>
+        <a class="btn btn-ghost" href="/docs">Open API console</a>
+        <button type="button" class="btn-ghost" id="btn-free-hero">Get free API key</button>
+      </div>
+    </section>
+    <section class="flow" aria-label="How it works">
+      <h2>Issue → Share → Verify</h2>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <span class="num">1</span>
+          <strong>Issue</strong>
+          <span>Agent DID or chain state digest, signed with UOV</span>
+        </div>
+        <span class="flow-arrow" aria-hidden="true">→</span>
+        <div class="flow-step">
+          <span class="num">2</span>
+          <strong>Share</strong>
+          <span>JSON wire cert or printable PDF</span>
+        </div>
+        <span class="flow-arrow" aria-hidden="true">→</span>
+        <div class="flow-step">
+          <span class="num">3</span>
+          <strong>Verify</strong>
+          <span>Stateless check — no full node required</span>
+        </div>
+      </div>
+    </section>
+    <section class="why">
+      <h2>Why UOV + SilentVerify?</h2>
+      <p>
+        Unbalanced Oil and Vinegar (UOV) gives fast signing and verification on prime fields — practical for agents and APIs.
+        Our production profile (<code>I_MIN</code>: q=251, o=8, v=24) targets NIST-style security levels; core algorithms are
+        <a href="https://github.com/beanapologist/UOVscheme/tree/main/formal" target="_blank" rel="noopener">formally specified in Lean 4</a>.
+      </p>
+      <ul>
+        <li>Trust cross-chain or off-chain state without multisigs or running your own archive node</li>
+        <li>Post-quantum agent identity for MCP, serverless, and payout gating</li>
+        <li>Same REST API for EVM, Solana, Cosmos, and XRPL anchors</li>
+      </ul>
+      <a class="btn btn-ghost" href="https://csrc.nist.gov/projects/post-quantum-cryptography" target="_blank" rel="noopener">NIST PQC program ↗</a>
     </section>
     <section class="grid">
       <article class="card">
@@ -164,9 +223,23 @@
       if (!r.ok) throw new Error(typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail || r.statusText));
       return data;
     }
+    async function ensureApiKey() {
+      let key = localStorage.getItem('sv_api_key');
+      if (key) return key;
+      key = (await post('/api/v1/billing/free-key')).api_key;
+      localStorage.setItem('sv_api_key', key);
+      return key;
+    }
     document.getElementById('btn-free').onclick = async () => {
-      try { showKey((await post('/api/v1/billing/free-key')).api_key); }
+      try { showKey(await ensureApiKey()); }
       catch (e) { showToast(e.message); }
+    };
+    document.getElementById('btn-free-hero').onclick = () => document.getElementById('btn-free').click();
+    document.getElementById('btn-demo').onclick = async () => {
+      try {
+        await ensureApiKey();
+        location.href = '/docs?demo=agent&run=1';
+      } catch (e) { showToast(e.message); }
     };
     document.getElementById('btn-pro').onclick = async () => {
       try {

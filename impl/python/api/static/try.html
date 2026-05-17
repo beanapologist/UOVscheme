@@ -174,6 +174,31 @@
       border-top: 1px solid var(--border);
       margin-top: 2rem;
     }
+    .quickstart {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .quickstart h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .quickstart p { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.75rem; }
+    .curl-block { margin-bottom: 0.75rem; }
+    .curl-block label { font-size: 0.75rem; font-weight: 600; display: block; margin-bottom: 0.25rem; }
+    .curl-block pre {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7rem;
+      background: var(--navy);
+      color: var(--cream);
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .errors-help { font-size: 0.85rem; color: var(--muted); margin-top: 1rem; }
+    .errors-help summary { cursor: pointer; font-weight: 600; color: var(--navy); }
+    .errors-help ul { margin: 0.5rem 0 0 1.1rem; }
   </style>
 </head>
 <body>
@@ -207,7 +232,33 @@
     </nav>
 
     <section id="panel-usecases" class="panel active">
-      <p class="hint">Pick a real-world flow — we pre-fill the right tab and you run one click at a time.</p>
+      <div class="quickstart">
+        <h3>Quickstart (curl)</h3>
+        <p>Set <code>BASE</code> to this host and <code>SV_API_KEY</code> from your key above (or get one at <a href="/">Home</a>).</p>
+        <div class="curl-block">
+          <label>1. Health</label>
+          <pre id="curl-health"></pre>
+        </div>
+        <div class="curl-block">
+          <label>2. Issue agent cert</label>
+          <pre id="curl-issue"></pre>
+        </div>
+        <div class="curl-block">
+          <label>3. Check quota</label>
+          <pre id="curl-usage"></pre>
+        </div>
+        <button type="button" class="btn btn-ghost" id="btn-usage" style="margin-top:0.25rem">Show my usage in results</button>
+      </div>
+      <details class="errors-help">
+        <summary>Common errors</summary>
+        <ul>
+          <li><strong>401 / missing_api_key</strong> — add <code>X-API-Key</code> header</li>
+          <li><strong>429 / quota_exceeded</strong> — free tier is 100 issuances/month; upgrade on Home</li>
+          <li><strong>502 / rpc_or_schema</strong> — RPC blocked or stale block; try public HTTPS URL + higher depth policy</li>
+          <li><strong>valid: false</strong> — re-run Issue or check cert JSON was not edited</li>
+        </ul>
+      </details>
+      <p class="hint" style="margin-top:1rem">Pick a real-world flow — we pre-fill the right tab and you run one click at a time.</p>
       <div class="use-grid">
         <article class="use-card">
           <h3>AI agent identity (PKI)</h3>
@@ -438,18 +489,51 @@
       document.getElementById('print-json').value = JSON.stringify(cert, null, 2);
     }
 
+    function formatError(data) {
+      if (typeof data === 'string') return data;
+      const d = data.detail;
+      if (typeof d === 'string') return d;
+      if (d && typeof d === 'object') {
+        const parts = [d.message || d.error || ''];
+        if (d.hint) parts.push('Hint: ' + d.hint);
+        if (d.usage) parts.push('Usage: ' + JSON.stringify(d.usage));
+        return parts.filter(Boolean).join('\n');
+      }
+      return JSON.stringify(data, null, 2);
+    }
+
     async function api(path, body) {
       const r = await fetch(path, { method: 'POST', headers: headers(), body: JSON.stringify(body) });
       const text = await r.text();
       let data;
       try { data = JSON.parse(text); } catch { data = text; }
       if (!r.ok) {
-        show(data, false);
+        const friendly = typeof data === 'object' ? { ...data, detail: formatError(data) } : formatError(data);
+        show(friendly, false);
         throw new Error('api error');
       }
       show(data, true);
       return data;
     }
+
+    const BASE = location.origin;
+    document.getElementById('curl-health').textContent =
+      `curl -s "${BASE}/api/v1/health"`;
+    document.getElementById('curl-issue').textContent =
+      `curl -s -X POST "${BASE}/api/v1/certs/agent/issue" \\\n`
+      + `  -H "Content-Type: application/json" \\\n`
+      + `  -H "X-API-Key: $SV_API_KEY" \\\n`
+      + `  -d '{"agent_did":"did:example:bot","capabilities":{"sign":true}}'`;
+    document.getElementById('curl-usage').textContent =
+      `curl -s "${BASE}/api/v1/billing/usage" -H "X-API-Key: $SV_API_KEY"`;
+
+    document.getElementById('btn-usage').onclick = async () => {
+      try {
+        const r = await fetch('/api/v1/billing/usage', { headers: headers() });
+        const data = await r.json();
+        show(data, r.ok);
+      } catch (e) { show(String(e), false); }
+    };
 
     document.getElementById('run-agent').onclick = async () => {
       let caps = {};
@@ -534,6 +618,16 @@
     if (lastCert) {
       document.getElementById('verify-json').value = JSON.stringify(lastCert, null, 2);
       document.getElementById('print-json').value = JSON.stringify(lastCert, null, 2);
+    }
+
+    const urlDemo = new URLSearchParams(location.search);
+    if (urlDemo.get('demo') === 'agent') {
+      USE_FLOWS['agent-pki']();
+      const saved = localStorage.getItem(KEY);
+      if (saved) keyEl.value = saved;
+      if (urlDemo.get('run') === '1') {
+        setTimeout(() => document.getElementById('run-agent').click(), 500);
+      }
     }
   </script>
 </body>

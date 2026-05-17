@@ -12,6 +12,7 @@ from statecert import StateCertificate, StateVerifier
 from statecert.issuer import load_verifier, recommended_params
 from uov import RandomAdapter
 
+from .errors import error_detail
 from .models import (
     CertIssueResponse,
     ChainAnchorWire,
@@ -58,11 +59,21 @@ def chain_binding_response(
 
 
 def map_chain_error(exc: Exception) -> HTTPException:
+    msg = str(exc)
     if isinstance(exc, ValueError):
-        return HTTPException(status_code=400, detail={"error": "validation_error", "message": str(exc)})
+        return HTTPException(
+            status_code=400,
+            detail=error_detail(error="validation_error", message=msg),
+        )
     if isinstance(exc, (OSError, RuntimeError)):
-        return HTTPException(status_code=502, detail={"error": "rpc_or_schema", "message": str(exc)})
-    return HTTPException(status_code=500, detail={"error": "internal", "message": str(exc)})
+        return HTTPException(
+            status_code=502,
+            detail=error_detail(error="rpc_or_schema", message=msg),
+        )
+    return HTTPException(
+        status_code=500,
+        detail=error_detail(error="internal", message=msg, hint="Unexpected server error — retry or open a GitHub issue with the request id."),
+    )
 
 
 _DEV_KEY = os.environ.get("SILENTVERIFY_DEV_API_KEY", "sv_dev_test_key")
