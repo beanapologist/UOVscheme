@@ -208,6 +208,7 @@
     <span style="font-size:0.75rem;color:var(--muted);font-weight:400">UI May 2026</span>
     <span class="spacer"></span>
     <a href="/">Home</a>
+    <a href="/verify">Verify</a>
     <a href="/redoc">Reference</a>
     <a href="/swagger">Advanced (Swagger)</a>
   </header>
@@ -229,6 +230,7 @@
       <button type="button" data-tab="state">Issue state cert</button>
       <button type="button" data-tab="verify">Verify cert</button>
       <button type="button" data-tab="print">Print certificate</button>
+      <button type="button" data-tab="wallet">My certs</button>
     </nav>
 
     <section id="panel-usecases" class="panel active">
@@ -384,10 +386,16 @@
       </div>
     </section>
 
+    <section id="panel-wallet" class="panel">
+      <p class="hint">Certificates saved in this browser. Open <a href="/verify">Verify</a> to check or print without an API key.</p>
+      <div id="wallet-list" class="use-grid" style="display:block"></div>
+    </section>
+
     <p id="status" class="status" hidden></p>
     <pre id="output" class="out empty" style="margin-top:1rem">Results appear here after you run an action.</pre>
   </main>
   <footer class="site-footer">A product of COINjecture Network LLC</footer>
+  <script src="/static/wallet.js"></script>
   <script>
     const KEY = 'sv_api_key';
     const LAST_CERT = 'sv_last_cert';
@@ -487,7 +495,43 @@
       localStorage.setItem(LAST_CERT, JSON.stringify(cert));
       document.getElementById('verify-json').value = JSON.stringify(cert, null, 2);
       document.getElementById('print-json').value = JSON.stringify(cert, null, 2);
+      if (typeof SVCertWallet !== 'undefined') {
+        const entry = SVCertWallet.saveCert(cert);
+        renderWalletPanel();
+        toast('Saved to My certs — verify at /verify?id=' + entry.id);
+      }
     }
+
+    function renderWalletPanel() {
+      const el = document.getElementById('wallet-list');
+      if (!el || typeof SVCertWallet === 'undefined') return;
+      const certs = SVCertWallet.listCerts();
+      if (!certs.length) {
+        el.innerHTML = '<p class="hint">Issue a cert above — it will appear here automatically.</p>';
+        return;
+      }
+      el.innerHTML = certs.map((c) => `
+        <article class="use-card" style="margin-bottom:0.75rem">
+          <h3>${c.label}</h3>
+          <p class="meta" style="font-size:0.75rem;color:var(--muted)">${new Date(c.saved_at).toLocaleString()}</p>
+          <div class="actions" style="margin-top:0.5rem">
+            <a class="btn btn-primary" href="/verify?id=${encodeURIComponent(c.id)}&run=1">Verify</a>
+            <button type="button" class="btn btn-ghost btn-w-load" data-id="${c.id}">Load in tabs</button>
+          </div>
+        </article>`).join('');
+      el.querySelectorAll('.btn-w-load').forEach((btn) => {
+        btn.onclick = () => {
+          const entry = SVCertWallet.getCert(btn.dataset.id);
+          if (!entry) return;
+          lastCert = entry.cert;
+          localStorage.setItem(LAST_CERT, JSON.stringify(entry.cert));
+          document.getElementById('verify-json').value = JSON.stringify(entry.cert, null, 2);
+          document.getElementById('print-json').value = JSON.stringify(entry.cert, null, 2);
+          toast('Loaded into Verify / Print tabs');
+        };
+      });
+    }
+    renderWalletPanel();
 
     function formatError(data) {
       if (typeof data === 'string') return data;

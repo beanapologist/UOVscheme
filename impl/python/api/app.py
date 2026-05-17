@@ -130,6 +130,9 @@ _PUBLIC = {
     "/swagger",
     "/redoc",
     "/api/v1/certs/print/demo",
+    "/api/v1/certs/verify",
+    "/api/v1/certs/print/public",
+    "/verify",
 }
 
 
@@ -181,6 +184,11 @@ async def swagger_ui():
 @app.get("/redoc", include_in_schema=False)
 async def redoc_ui():
     return _html_page("redoc.html")
+
+
+@app.get("/verify", include_in_schema=False)
+async def verify_cert_page():
+    return _html_page("verify.html")
 
 
 if _STATIC_DIR.is_dir():

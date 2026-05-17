@@ -127,6 +127,16 @@ async def issue_state_offline(
 
 
 @router.post(
+    "/api/v1/certs/verify",
+    response_model=CertVerifyResponse,
+    summary="Verify any certificate (crypto only, no API key)",
+    description="Public endpoint for recipients and auditors. Checks UOV signature only — no chain RPC.",
+)
+async def verify_cert_public(body: CertVerifyRequest) -> CertVerifyResponse:
+    return _verify_cert(body.wire(), expected_type=None)
+
+
+@router.post(
     "/api/v1/certs/state/verify",
     response_model=CertVerifyResponse,
     summary="Verify state certificate (crypto only)",

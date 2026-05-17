@@ -30,6 +30,26 @@ async def print_certificate(
     return HTMLResponse(content=html)
 
 
+@router.post(
+    "/print/public",
+    response_class=HTMLResponse,
+    summary="Printable certificate (no API key)",
+    include_in_schema=True,
+)
+async def print_certificate_public(
+    body: CertVerifyRequest,
+    autoprint: bool = False,
+) -> HTMLResponse:
+    """Anyone with the cert JSON can open a human-readable print view."""
+    try:
+        cert = StateCertificate.from_wire_dict(body.wire())
+    except (ValueError, KeyError, TypeError) as e:
+        raise HTTPException(status_code=400, detail=f"invalid cert: {e}") from e
+    verified = StateVerifier.verify_certificate(cert)
+    html = render_certificate_html(cert.to_wire_dict(), verified=verified)
+    return HTMLResponse(content=html)
+
+
 @router.get("/print/demo", response_class=HTMLResponse, include_in_schema=False)
 async def print_demo_certificate() -> HTMLResponse:
     """Demo printable page (no API key). Uses built-in sample cert."""

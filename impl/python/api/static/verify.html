@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Verify certificate — SilentVerify</title>
+  <link rel="icon" href="/static/silentverify-logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #1a2d4a;
+      --cream: #f7f6f3;
+      --coral: #d4736f;
+      --border: #d4d0c8;
+      --muted: #5c6b7a;
+      --ok: #1a6b45;
+      --fail: #9b2c2c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "DM Sans", system-ui, sans-serif; background: var(--cream); color: var(--navy); line-height: 1.5; min-height: 100vh; }
+    .bar {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 12px 20px; background: var(--navy); color: var(--cream);
+    }
+    .bar a { color: var(--cream); opacity: 0.85; text-decoration: none; font-size: 0.9rem; }
+    .bar a:hover { opacity: 1; text-decoration: underline; }
+    .bar .spacer { flex: 1; }
+    main { max-width: 720px; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+    h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+    .lead { color: var(--muted); margin-bottom: 1.5rem; }
+    textarea {
+      width: 100%; min-height: 140px; font-family: "JetBrains Mono", monospace;
+      font-size: 0.75rem; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+    .btn {
+      font-family: inherit; font-weight: 600; font-size: 0.9rem;
+      padding: 0.65rem 1rem; border-radius: 8px; border: none; cursor: pointer;
+    }
+    .btn-primary { background: var(--coral); color: #fff; }
+    .btn-ghost { background: #fff; border: 1px solid var(--border); color: var(--navy); }
+    .result {
+      border-radius: 12px; padding: 1rem 1.25rem; margin-top: 1rem;
+      border: 1px solid var(--border); background: #fff;
+    }
+    .result.ok { border-color: var(--ok); }
+    .result.fail { border-color: var(--fail); }
+    .result h2 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .result dl { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; font-size: 0.9rem; }
+    .result dt { color: var(--muted); }
+    .wallet { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+    .wallet h2 { font-size: 1.1rem; margin-bottom: 0.75rem; }
+    .wallet-item {
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+      padding: 0.65rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem;
+    }
+    .wallet-item:last-child { border-bottom: none; }
+    .wallet-item .label { flex: 1; min-width: 12rem; font-weight: 600; }
+    .wallet-item .meta { font-size: 0.75rem; color: var(--muted); width: 100%; }
+    .site-footer { text-align: center; padding: 1.5rem; font-size: 0.8rem; color: var(--muted); }
+    input[type=file] { font-size: 0.85rem; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <img src="/static/silentverify-logo.png" alt="" height="32" />
+    <strong>Verify certificate</strong>
+    <span class="spacer"></span>
+    <a href="/">Home</a>
+    <a href="/docs">Issue certs</a>
+  </header>
+  <main>
+    <h1>Use your certificate</h1>
+    <p class="lead">Paste JSON from an issuer, upload a <code>.json</code> file, or pick a saved cert. Verification is cryptographic only — no API key required.</p>
+
+    <input type="file" id="file-input" accept=".json,application/json" />
+    <textarea id="cert-json" placeholder='Paste the full cert object from POST …/issue (the "cert" field)'></textarea>
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="btn-verify">Verify</button>
+      <button type="button" class="btn btn-ghost" id="btn-save">Save to wallet</button>
+      <button type="button" class="btn btn-ghost" id="btn-print">Print / PDF</button>
+      <button type="button" class="btn btn-ghost" id="btn-download">Download JSON</button>
+    </div>
+    <div id="result" class="result" hidden></div>
+
+    <section class="wallet">
+      <h2>Saved certificates (this browser)</h2>
+      <p class="lead" style="font-size:0.85rem;margin-bottom:0.75rem">Certs you issue at <a href="/docs">Try API</a> can be saved here for quick verify and print.</p>
+      <div id="wallet-list"></div>
+    </section>
+  </main>
+  <footer class="site-footer">A product of COINjecture Network LLC</footer>
+  <script src="/static/wallet.js"></script>
+  <script>
+    const ta = document.getElementById('cert-json');
+    const resultEl = document.getElementById('result');
+    const walletList = document.getElementById('wallet-list');
+
+    function parseCert() {
+      const raw = ta.value.trim();
+      if (!raw) throw new Error('Paste or upload certificate JSON');
+      const data = JSON.parse(raw);
+      return data.cert || data;
+    }
+
+    function showResult(data, wire) {
+      resultEl.hidden = false;
+      const ok = data.valid === true;
+      resultEl.className = 'result ' + (ok ? 'ok' : 'fail');
+      const meta = wire.metadata || {};
+      resultEl.innerHTML = `
+        <h2>${ok ? 'Valid certificate' : 'Invalid or tampered'}</h2>
+        <dl>
+          <dt>Crypto</dt><dd>${ok ? 'PASS' : 'FAIL'}</dd>
+          <dt>Type</dt><dd>${data.cert_type || meta.cert_type || '—'}</dd>
+          <dt>Agent DID</dt><dd>${meta.agent_did || '—'}</dd>
+          <dt>Public key fp</dt><dd style="font-family:JetBrains Mono,monospace;font-size:0.8rem">${data.pubkey_fp || wire.pubkey_fp || '—'}</dd>
+          ${data.detail ? `<dt>Detail</dt><dd>${data.detail}</dd>` : ''}
+        </dl>`;
+    }
+
+    async function verifyPublic() {
+      const wire = parseCert();
+      const r = await fetch('/api/v1/certs/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cert: wire }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.detail?.message || data.detail || r.statusText);
+      showResult(data, wire);
+      return wire;
+    }
+
+    document.getElementById('btn-verify').onclick = async () => {
+      try { await verifyPublic(); } catch (e) { alert(e.message); }
+    };
+
+    document.getElementById('btn-save').onclick = () => {
+      try {
+        const wire = parseCert();
+        const entry = SVCertWallet.saveCert(wire);
+        renderWallet();
+        alert('Saved: ' + entry.label);
+      } catch (e) { alert(e.message); }
+    };
+
+    document.getElementById('btn-download').onclick = () => {
+      try { SVCertWallet.downloadJson(parseCert()); } catch (e) { alert(e.message); }
+    };
+
+    document.getElementById('btn-print').onclick = async () => {
+      try {
+        const wire = parseCert();
+        const r = await fetch('/api/v1/certs/print/public?autoprint=1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cert: wire }),
+        });
+        const html = await r.text();
+        if (!r.ok) throw new Error(html);
+        const w = window.open('', '_blank');
+        w.document.write(html);
+        w.document.close();
+      } catch (e) { alert(e.message); }
+    };
+
+    document.getElementById('file-input').onchange = (ev) => {
+      const f = ev.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => { ta.value = reader.result; };
+      reader.readAsText(f);
+    };
+
+    function renderWallet() {
+      const certs = SVCertWallet.listCerts();
+      if (!certs.length) {
+        walletList.innerHTML = '<p class="lead" style="font-size:0.85rem">No saved certs yet.</p>';
+        return;
+      }
+      walletList.innerHTML = certs.map((c) => `
+        <div class="wallet-item" data-id="${c.id}">
+          <span class="label">${c.label}</span>
+          <button type="button" class="btn btn-ghost btn-load">Load</button>
+          <button type="button" class="btn btn-ghost btn-verify-one">Verify</button>
+          <button type="button" class="btn btn-ghost btn-remove">Remove</button>
+          <span class="meta">Saved ${new Date(c.saved_at).toLocaleString()}</span>
+        </div>`).join('');
+      walletList.querySelectorAll('.btn-load').forEach((btn, i) => {
+        btn.onclick = () => {
+          ta.value = JSON.stringify(certs[i].cert, null, 2);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+      });
+      walletList.querySelectorAll('.btn-verify-one').forEach((btn, i) => {
+        btn.onclick = async () => {
+          ta.value = JSON.stringify(certs[i].cert, null, 2);
+          try { await verifyPublic(); } catch (e) { alert(e.message); }
+        };
+      });
+      walletList.querySelectorAll('.btn-remove').forEach((btn, i) => {
+        btn.onclick = () => {
+          SVCertWallet.removeCert(certs[i].id);
+          renderWallet();
+        };
+      });
+    }
+
+    const params = new URLSearchParams(location.search);
+    const walletId = params.get('id');
+    if (walletId) {
+      const entry = SVCertWallet.getCert(walletId);
+      if (entry) ta.value = JSON.stringify(entry.cert, null, 2);
+    }
+    renderWallet();
+    if (params.get('run') === '1' && ta.value.trim()) {
+      verifyPublic().catch((e) => alert(e.message));
+    }
+  </script>
+</body>
+</html>

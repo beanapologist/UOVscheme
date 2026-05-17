@@ -108,6 +108,34 @@ class TestSaasApi:
         assert "swagger-theme.css" in r.text
         assert "Try API" in r.text
 
+    def test_verify_page(self, client):
+        r = client.get("/verify")
+        assert r.status_code == 200
+        assert "Verify certificate" in r.text
+        assert "wallet.js" in r.text
+
+    def test_public_verify_no_api_key(self, client):
+        issue = client.post(
+            "/api/v1/certs/agent/issue",
+            headers={"X-API-Key": "saas-test-key"},
+            json={"agent_did": "did:public:1", "capabilities": {"read": True}},
+        )
+        cert = issue.json()["cert"]
+        r = client.post("/api/v1/certs/verify", json={"cert": cert})
+        assert r.status_code == 200
+        assert r.json()["valid"] is True
+
+    def test_public_print_no_api_key(self, client):
+        issue = client.post(
+            "/api/v1/certs/agent/issue",
+            headers={"X-API-Key": "saas-test-key"},
+            json={"agent_did": "did:print-pub:1", "capabilities": {}},
+        )
+        cert = issue.json()["cert"]
+        r = client.post("/api/v1/certs/print/public", json={"cert": cert})
+        assert r.status_code == 200
+        assert "SilentVerify Certificate" in r.text
+
     def test_print_demo(self, client):
         r = client.get("/api/v1/certs/print/demo")
         assert r.status_code == 200
