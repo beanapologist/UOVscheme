@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+}
+
+@theme inline {
+    --font-body: var(--font-dm-sans);
+    --header-height: 5rem;
+}
+
+html {
+}
+
+body {
+    font-family: var(--font-body);
+    color: var(--color-slate-50);
+    background-color: var(--color-slate-950);
+}
