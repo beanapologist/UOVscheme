@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@variant dark (false);
 
 @theme {
 }
@@ -6,13 +7,147 @@
 @theme inline {
     --font-body: var(--font-dm-sans);
     --header-height: 5rem;
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+
+    --color-support: var(--support);
+    --color-support-foreground: var(--support-foreground);
+
+    --color-surface: var(--surface);
+    --color-surface-foreground: var(--surface-foreground);
+
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-input: var(--input);
+    --color-focus: var(--focus);
+
+    --color-border: var(--border);
 }
 
-html {
+:root {
+    --background: theme(colors.slate.950);
+    --foreground: theme(colors.slate.100);
+
+    --primary: theme(colors.sky.500);
+    --primary-foreground: theme(colors.white);
+
+    --support: theme(colors.slate.800);
+    --support-foreground: theme(colors.slate.200);
+
+    --surface: theme(colors.slate.900);
+    --surface-foreground: theme(colors.slate.200);
+
+    --popover: theme(colors.slate.900);
+    --popover-foreground: theme(colors.slate.200);
+
+    --muted: theme(colors.slate.600);
+    --muted-foreground: theme(colors.slate.400);
+
+    --input: theme(colors.slate.800);
+    --focus: theme(colors.sky.500);
+
+    --border: theme(colors.slate.800);
 }
 
-body {
-    font-family: var(--font-body);
-    color: var(--color-slate-50);
-    background-color: var(--color-slate-950);
+@layer base {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-weight: 600;
+        line-height: var(--leading-tight);
+        letter-spacing: var(--tracking-tight);
+    }
+
+    h1 {
+        font-size: clamp(
+            var(--text-4xl),
+            var(--text-3xl) + 1.5vw,
+            var(--text-5xl)
+        );
+        font-weight: var(--font-weight-bold);
+    }
+    h2 {
+        font-size: clamp(
+            var(--text-3xl),
+            var(--text-2xl) + 1.25vw,
+            var(--text-4xl)
+        );
+    }
+    h3 {
+        font-size: clamp(
+            var(--text-2xl),
+            var(--text-xl) + 1vw,
+            var(--text-3xl)
+        );
+        line-height: var(--leading-snug);
+    }
+    h4 {
+        font-size: clamp(
+            var(--text-xl),
+            var(--text-lg) + 0.75vw,
+            var(--text-2xl)
+        );
+    }
+    h5 {
+        font-size: clamp(
+            var(--text-lg),
+            var(--text-base) + 0.5vw,
+            var(--text-xl)
+        );
+    }
+    h6 {
+        font-size: clamp(
+            var(--text-base),
+            var(--text-sm) + 0.25vw,
+            var(--text-lg)
+        );
+    }
+
+    p {
+        color: var(--color-muted-foreground);
+        max-width: 65ch;
+    }
+
+    body {
+        color: var(--color-foreground);
+        line-height: var(--leading-relaxed);
+        background-color: var(--color-background);
+        -webkit-font-smoothing: antialiased;
+        position: relative;
+        font-size: var(--font-body);
+        @apply font-body;
+    }
+
+    button {
+        cursor: pointer;
+    }
+
+    section {
+        @apply py-8 sm:py-12 lg:py-16;
+    }
+}
+
+@layer components {
+    .section-sm {
+        @apply py-6 sm:py-10 lg:py-14;
+    }
+
+    .section-lg {
+        @apply py-16 sm:py-24 lg:py-32;
+    }
+}
+
+.root {
+    isolation: isolate;
 }

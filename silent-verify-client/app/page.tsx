@@ -1,11 +1,11 @@
-import { Container } from "@/components/layout";
+import { Hero, Flow, Plans } from "@/components/blocks/home";
 
 export default function Page() {
     return (
-        <div className="">
-            <Container>
-                <h1>Homepage</h1>
-            </Container>
-        </div>
+        <>
+            <Hero />
+            <Flow />
+            <Plans />
+        </>
     );
 }
