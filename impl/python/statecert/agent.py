@@ -17,6 +17,8 @@ class AgentIdentity:
     capabilities: Dict[str, Any]
     reputation_hash: Optional[str] = None
     anchor: Optional[Dict[str, Any]] = None
+    previous_cert_digest: Optional[str] = None
+    task_context: Optional[Dict[str, Any]] = None
     expires_at_unix: Optional[int] = None
 
     def to_canonical_dict(self) -> Dict[str, Any]:
@@ -36,6 +38,12 @@ class AgentIdentity:
             if not isinstance(self.anchor, dict):
                 raise ValueError("anchor must be a JSON object when present")
             out["anchor"] = self.anchor
+        if self.previous_cert_digest is not None:
+            out["previous_cert_digest"] = str(self.previous_cert_digest)
+        if self.task_context is not None:
+            if not isinstance(self.task_context, dict):
+                raise ValueError("task_context must be a JSON object when present")
+            out["task_context"] = self.task_context
         if self.expires_at_unix is not None:
             out["expires_at_unix"] = int(self.expires_at_unix)
         return out
@@ -53,6 +61,8 @@ def agent_identity_from_request(
     capabilities: Dict[str, Any],
     reputation_hash: Optional[str] = None,
     anchor: Optional[Dict[str, Any]] = None,
+    previous_cert_digest: Optional[str] = None,
+    task_context: Optional[Dict[str, Any]] = None,
     expires_in_days: int = 30,
 ) -> AgentIdentity:
     """Build identity with ``expires_at_unix`` from ``expires_in_days`` (UTC wall clock)."""
@@ -60,6 +70,13 @@ def agent_identity_from_request(
         raise ValueError("expires_in_days must be >= 1")
     if expires_in_days > 3650:
         raise ValueError("expires_in_days must be <= 3650")
+    if previous_cert_digest is not None:
+        d = str(previous_cert_digest).strip()
+        if not d:
+            raise ValueError("previous_cert_digest must be non-empty when present")
+        if len(d) > 128:
+            raise ValueError("previous_cert_digest must be <= 128 characters")
+        previous_cert_digest = d
     now = int(time.time())
     expires_at = now + int(expires_in_days) * 86400
     return AgentIdentity(
@@ -67,5 +84,7 @@ def agent_identity_from_request(
         capabilities=capabilities,
         reputation_hash=reputation_hash,
         anchor=anchor,
+        previous_cert_digest=previous_cert_digest,
+        task_context=task_context,
         expires_at_unix=expires_at,
     )

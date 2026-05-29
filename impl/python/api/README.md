@@ -21,6 +21,7 @@ cd /path/to/UOVscheme/impl/python
 | List chain hooks | `GET /api/v1/chains` |
 | Agent cert | `POST /api/v1/certs/agent/issue` |
 | Verify agent (offline crypto) | `POST /api/v1/certs/agent/verify` |
+| ERC-8004 passport (agent + state certs) | `POST /api/v1/certs/compose/passport` |
 | State cert (you supply anchor) | `POST /api/v1/certs/state/issue` |
 | **EVM: fetch block + issue** | `POST /api/v1/chains/evm/issue` |
 | **EVM: verify on live RPC** | `POST /api/v1/chains/evm/verify` |
@@ -35,6 +36,7 @@ Legacy URLs (`/api/v1/issue/agent-cert`, `/api/v1/evm/verify-state-cert`, …) s
 ## Request tips
 
 - **Authorize once** in Swagger; all protected routes share the key.
+- Agent issue accepts optional **`previousCertDigest`** (reputation chain link) and **`taskContext`** (task-scoped JSON bound into the signed identity).
 - Use **`cert`** or **`certificate`** in verify bodies (both accepted).
 - Chain **issue** responses include an **`anchor`** field (what was fetched from RPC).
 - Chain **verify** responses use `{ "result": { "ok": true, … } }`.

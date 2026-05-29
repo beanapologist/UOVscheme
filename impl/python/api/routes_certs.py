@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
 
 from statecert import (
     ChainState,
@@ -25,8 +25,11 @@ from .models import (
     CertIssueResponse,
     CertVerifyRequest,
     CertVerifyResponse,
+    PassportComposeRequest,
+    PassportComposeResponse,
     StateCertIssueRequest,
 )
+from .passport import compose_erc8004_passport
 
 router = APIRouter(tags=["Agent PKI"])
 
@@ -77,6 +80,8 @@ async def issue_agent(
             capabilities=body.capabilities,
             reputation_hash=body.reputation_hash,
             anchor=body.anchor,
+            previous_cert_digest=body.previous_cert_digest,
+            task_context=body.task_context,
             expires_in_days=body.expires_in_days,
         )
     except ValueError as e:
@@ -129,7 +134,14 @@ async def issue_state_offline(
         block_height=body.block_height,
         state_root_hex=body.state_root_hex,
     )
-    md = {"flow": "state_anchor", "cert_type": "state", **body.metadata}
+    md = {
+        "flow": "state_anchor",
+        "cert_type": "state",
+        "chain_id": body.chain_id,
+        "block_height": body.block_height,
+        "state_root_hex": body.state_root_hex,
+        **body.metadata,
+    }
     cert = load_verifier_instance().issue_for_chain_state(state, new_rng(), metadata=md)
     return issue_response(cert)
 
@@ -166,6 +178,39 @@ async def verify_state_offline(
     _ctx: dict = Depends(require_api_key),
 ) -> CertVerifyResponse:
     return _verify_cert(body.wire(), expected_type=None)
+
+
+@router.post(
+    "/api/v1/certs/compose/passport",
+    response_model=PassportComposeResponse,
+    summary="Compose ERC-8004 passport metadata",
+    description=(
+        "Accept an **agent** cert and a **state** cert (both cryptographically verified), "
+        "return clean [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) registration JSON "
+        "suitable for `agentURI` / off-chain agent metadata."
+    ),
+)
+async def compose_passport(
+    request: Request,
+    body: PassportComposeRequest,
+    _ctx: dict = Depends(require_api_key),
+) -> PassportComposeResponse:
+    base = body.verify_base_url
+    if not base:
+        base = str(request.base_url).rstrip("/")
+    try:
+        passport = compose_erc8004_passport(
+            agent_wire=body.agent_cert,
+            state_wire=body.state_cert,
+            name=body.name,
+            description=body.description,
+            image=body.image,
+            registrations=body.registrations,
+            verify_base_url=base,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return PassportComposeResponse(passport=passport)
 
 
 # Legacy paths (aliases)

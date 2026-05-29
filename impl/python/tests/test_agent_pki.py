@@ -22,6 +22,8 @@ class TestAgentPKI:
             capabilities={"deploy": True},
             reputation_hash="rep",
             anchor={"chain_id": "eip155:1"},
+            previous_cert_digest="sha256:abc",
+            task_context={"task_id": "t1"},
             expires_in_days=14,
         )
         assert ident.expires_at_unix is not None
@@ -29,6 +31,8 @@ class TestAgentPKI:
         assert d["agent_did"] == "did:example:agent"
         assert d["reputation_hash"] == "rep"
         assert d["anchor"]["chain_id"] == "eip155:1"
+        assert d["previous_cert_digest"] == "sha256:abc"
+        assert d["task_context"] == {"task_id": "t1"}
 
     def test_identity_validation(self):
         with pytest.raises(ValueError, match="agent_did"):
@@ -39,6 +43,12 @@ class TestAgentPKI:
             agent_identity_from_request(
                 agent_did="did:x", capabilities={}, expires_in_days=0
             )
+        with pytest.raises(ValueError, match="task_context"):
+            AgentIdentity(
+                "did:x",
+                {},
+                task_context="not-a-dict",  # type: ignore[arg-type]
+            ).to_canonical_dict()
 
     def test_issue_for_agent_roundtrip(self):
         k = _toy_key()

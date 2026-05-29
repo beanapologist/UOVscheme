@@ -91,8 +91,17 @@ class StateVerifier:
             "flow": "agent_pki",
             "cert_type": "agent",
             "agent_did": identity.agent_did,
+            "capabilities": identity.capabilities,
             **(metadata or {}),
         }
+        if identity.reputation_hash is not None:
+            md["reputation_hash"] = identity.reputation_hash
+        if identity.anchor is not None:
+            md["anchor"] = identity.anchor
+        if identity.previous_cert_digest is not None:
+            md["previous_cert_digest"] = identity.previous_cert_digest
+        if identity.task_context is not None:
+            md["task_context"] = identity.task_context
         if identity.expires_at_unix is not None:
             md["expires_at_unix"] = identity.expires_at_unix
         return self.issue_on_digest(self.digest_for_agent(identity), rng, md)

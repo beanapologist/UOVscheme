@@ -20,6 +20,11 @@ _AGENT_EXAMPLE = {
     "agent_did": "did:example:acme-agent-7",
     "capabilities": {"sign": True, "deploy": True, "network": "acme-cloud"},
     "reputation_hash": "sha256:demo",
+    "previousCertDigest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "taskContext": {
+        "task_id": "deploy-42",
+        "mcp_endpoint": "https://mcp.example.com/",
+    },
     "expires_in_days": 30,
 }
 
@@ -69,7 +74,10 @@ STATE_VERIFY_EXAMPLE = {"cert": sample_state_cert_wire()}
 
 
 class AgentCertIssueRequest(BaseModel):
-    model_config = ConfigDict(json_schema_extra=_schema_example(_AGENT_EXAMPLE))
+    model_config = ConfigDict(
+        json_schema_extra=_schema_example(_AGENT_EXAMPLE),
+        populate_by_name=True,
+    )
 
     agent_did: str = Field(
         default="did:example:acme-agent-7",
@@ -82,6 +90,17 @@ class AgentCertIssueRequest(BaseModel):
     anchor: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Optional chain anchor object (stored in identity, not fetched)",
+    )
+    previous_cert_digest: Optional[str] = Field(
+        default=None,
+        max_length=128,
+        validation_alias=AliasChoices("previous_cert_digest", "previousCertDigest"),
+        description="Digest of prior agent cert (reputation chain link)",
+    )
+    task_context: Optional[Dict[str, Any]] = Field(
+        default=None,
+        validation_alias=AliasChoices("task_context", "taskContext"),
+        description="Optional task-scoped context bound into the signed identity",
     )
     expires_in_days: int = Field(default=30, ge=1, le=3650)
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -434,3 +453,45 @@ class CrossL1VerifyRequest(CrossL1IssueRequest):
 class ChainCatalogResponse(BaseModel):
     chains: List[Dict[str, Any]]
     hint: str = "Use POST …/issue to fetch anchor + sign; POST …/verify to bind cert to live chain"
+
+
+class PassportComposeRequest(BaseModel):
+    """Compose ERC-8004 registration metadata from agent + state certificates."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    agent_cert: Dict[str, Any] = Field(
+        ...,
+        validation_alias=AliasChoices("agent_cert", "agentCert"),
+        description="Agent cert wire from POST …/certs/agent/issue",
+    )
+    state_cert: Dict[str, Any] = Field(
+        ...,
+        validation_alias=AliasChoices("state_cert", "stateCert"),
+        description="State cert wire from POST …/certs/state/issue (or chain issue)",
+    )
+    name: Optional[str] = Field(default=None, max_length=256)
+    description: Optional[str] = Field(default=None, max_length=4096)
+    image: Optional[str] = Field(default=None, max_length=2048)
+    registrations: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description="Optional ERC-8004 on-chain registration references",
+    )
+    verify_base_url: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("verify_base_url", "verifyBaseUrl"),
+        description="Public API base URL for SilentVerify verify service (defaults to request host)",
+    )
+
+
+class PassportComposeResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    response_schema: str = Field(
+        default="silentverify.erc8004_passport/v1",
+        serialization_alias="schema",
+        description="SilentVerify compose response schema",
+    )
+    passport: Dict[str, Any] = Field(
+        description="ERC-8004 registration-v1 compatible agent metadata JSON",
+    )

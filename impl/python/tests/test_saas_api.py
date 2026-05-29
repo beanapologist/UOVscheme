@@ -192,6 +192,60 @@ class TestSaasApi:
         )
         assert v.json()["valid"] is False
 
+    def test_issue_agent_with_reputation_chain_fields(self, client):
+        r = client.post(
+            "/api/v1/certs/agent/issue",
+            headers={"X-API-Key": "saas-test-key"},
+            json={
+                "agent_did": "did:example:chained",
+                "capabilities": {"sign": True},
+                "previousCertDigest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                "taskContext": {"task_id": "deploy-1"},
+                "expires_in_days": 7,
+            },
+        )
+        assert r.status_code == 200, r.text
+        meta = r.json()["cert"].get("metadata") or {}
+        assert meta.get("previous_cert_digest", "").startswith("sha256:")
+        assert meta.get("task_context") == {"task_id": "deploy-1"}
+
+    def test_compose_passport_endpoint(self, client):
+        agent = client.post(
+            "/api/v1/certs/agent/issue",
+            headers={"X-API-Key": "saas-test-key"},
+            json={
+                "agent_did": "did:example:passport",
+                "capabilities": {"verify": True},
+                "taskContext": {"web_endpoint": "https://agent.example/"},
+            },
+        )
+        assert agent.status_code == 200
+        state = client.post(
+            "/api/v1/certs/state/issue",
+            headers={"X-API-Key": "saas-test-key"},
+            json={
+                "chain_id": "eip155:1",
+                "block_height": 100,
+                "state_root_hex": "0x" + "11" * 32,
+            },
+        )
+        assert state.status_code == 200
+        r = client.post(
+            "/api/v1/certs/compose/passport",
+            headers={"X-API-Key": "saas-test-key"},
+            json={
+                "agentCert": agent.json()["cert"],
+                "stateCert": state.json()["cert"],
+            },
+        )
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["schema"] == "silentverify.erc8004_passport/v1"
+        passport = body["passport"]
+        assert passport["type"] == "https://eips.ethereum.org/EIPS/eip-8004#registration-v1"
+        assert passport["silentverify"]["agent"]["agent_did"] == "did:example:passport"
+        assert passport["silentverify"]["state"]["block_height"] == 100
+
 
 class TestAgentModule:
     def test_agent_digest_deterministic(self):

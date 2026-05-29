@@ -22,6 +22,15 @@ def fingerprint_public_key(public_key: Dict[str, Any]) -> str:
     return hashlib.sha256(body).hexdigest()
 
 
+def certificate_wire_digest(wire: Dict[str, Any]) -> str:
+    """Stable digest of a certificate wire object (for reputation chaining).
+
+    Returns ``sha256:<hex>`` over canonical JSON of the full wire dict.
+    """
+    body = json.dumps(wire, sort_keys=True, separators=(",", ":")).encode()
+    return f"sha256:{hashlib.sha256(body).hexdigest()}"
+
+
 @dataclass
 class StateCertificate:
     """Pipeline object: digest ``y``, signature ``σ``, public key, fingerprint, metadata."""
