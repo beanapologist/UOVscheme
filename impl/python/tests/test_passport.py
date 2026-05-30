@@ -65,7 +65,10 @@ class TestPassportCompose:
         assert passport["type"] == ERC8004_REGISTRATION_TYPE
         assert passport["name"] == "passport-agent"
         assert "services" in passport
-        assert passport["silentverify"]["agent"]["previous_cert_digest"] == "sha256:deadbeef"
+        assert (
+            passport["silentverify"]["agent"]["previous_cert_digest"]
+            == "sha256:deadbeef"
+        )
         assert passport["silentverify"]["state"]["chain_id"] == "eip155:1"
         mcp = [s for s in passport["services"] if s.get("name") == "MCP"]
         assert mcp and mcp[0]["endpoint"] == "https://mcp.test/"

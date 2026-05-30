@@ -1,7 +1,11 @@
 """State certificate pipeline: chain state → field digest → UOV certificate → verify."""
 
 from .agent import AgentIdentity, agent_identity_from_request, agent_identity_to_digest
-from .certificate import StateCertificate, certificate_wire_digest, fingerprint_public_key
+from .certificate import (
+    StateCertificate,
+    certificate_wire_digest,
+    fingerprint_public_key,
+)
 from .cosmos_rpc import fetch_cosmos_commitment
 from .crt_bridge import CRTBridge
 from .evm_rpc import fetch_chain_state_evm

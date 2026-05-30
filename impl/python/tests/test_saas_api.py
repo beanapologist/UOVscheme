@@ -242,7 +242,10 @@ class TestSaasApi:
         body = r.json()
         assert body["schema"] == "silentverify.erc8004_passport/v1"
         passport = body["passport"]
-        assert passport["type"] == "https://eips.ethereum.org/EIPS/eip-8004#registration-v1"
+        assert (
+            passport["type"]
+            == "https://eips.ethereum.org/EIPS/eip-8004#registration-v1"
+        )
         assert passport["silentverify"]["agent"]["agent_did"] == "did:example:passport"
         assert passport["silentverify"]["state"]["block_height"] == 100
 
