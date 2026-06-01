@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
 import "@/styles/globals.css";
 import { Footer, Header } from "@/components/layout";
+import { Toaster } from "sonner";
 
 const dmSans = DM_Sans({
     variable: "--font-dm-sans",
@@ -19,11 +20,12 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className={`${dmSans.variable} h-full antialiased`}>
+        <html lang="en" className={`${dmSans.variable} h-full antialiase`}>
             <body className="min-h-full flex flex-col">
                 <Header />
-                <main className="flex-1">{children}</main>
+                <main className="flex-1 flex flex-col">{children}</main>
                 <Footer />
+                <Toaster theme="dark" visibleToasts={1} />
             </body>
         </html>
     );

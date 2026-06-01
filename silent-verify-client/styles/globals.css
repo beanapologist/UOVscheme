@@ -33,6 +33,7 @@
 }
 
 :root {
+    /*
     --background: theme(colors.slate.950);
     --foreground: theme(colors.slate.100);
 
@@ -55,6 +56,39 @@
     --focus: theme(colors.sky.500);
 
     --border: theme(colors.slate.800);
+    */
+
+    --background: #0a0e14;
+    --foreground: #e8eef4;
+
+    --primary: #3d9cf5;
+    --primary-foreground: #03111f;
+
+    --surface: #121820;
+    --surface-foreground: #cbd5e1;
+
+    --support: #161e28;
+    --support-foreground: #94a3b8;
+
+    --popover: #1a2333;
+    --popover-foreground: #dde4ed;
+
+    --popcorn: #3d9cf5;
+    --popcorn-foreground: #03111f;
+
+    --muted: #475569;
+    --muted-foreground: #94a3b8;
+
+    --success: #34d399;
+    --success-foreground: #052e16;
+
+    --warning: #d4736f;
+    --warning-foreground: #fff1f0;
+
+    --input: #161e28;
+    --focus: #3d9cf5;
+
+    --border: #1e2a3a;
 }
 
 @layer base {
@@ -125,29 +159,31 @@
         background-color: var(--color-background);
         -webkit-font-smoothing: antialiased;
         position: relative;
-        font-size: var(--font-body);
-        @apply font-body;
+        font-family: var(--font-body);
+        /* font-size: var(--text-base); */
+        /* text-rendering: optimizeLegibility; */
+        /* @apply text-lg; */
     }
 
     button {
         cursor: pointer;
     }
-
-    section {
-        @apply py-8 sm:py-12 lg:py-16;
-    }
 }
 
 @layer components {
+    .root {
+        isolation: isolate;
+    }
+
+    .section {
+        @apply py-8 sm:py-12 lg:py-16 flex-1;
+    }
+
     .section-sm {
-        @apply py-6 sm:py-10 lg:py-14;
+        @apply py-6 sm:py-10 lg:py-14 flex-1;
     }
 
     .section-lg {
-        @apply py-16 sm:py-24 lg:py-32;
+        @apply py-16 sm:py-24 lg:py-32 flex-1;
     }
-}
-
-.root {
-    isolation: isolate;
 }

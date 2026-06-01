@@ -12,7 +12,7 @@ const badgeVariants = cva(
                     "bg-support text-support-foreground [a]:hover:bg-support/80",
                 error: "bg-error/10 text-error focus-visible:ring-error/20 [a]:hover:bg-error/20",
                 outline:
-                    "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
+                    "bg-surface border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
                 ghost: "hover:bg-muted hover:text-muted-foreground",
                 link: "text-primary underline-offset-4 hover:underline",
             },

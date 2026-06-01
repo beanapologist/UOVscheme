@@ -1,10 +1,11 @@
 import { Container } from "@/components/layout";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Bell } from "lucide-react";
 
 export default function Hero() {
     return (
-        <section className="">
+        <section className="section">
             <Container className="flex flex-col gap-4">
                 <h1>
                     Post-quantum certificates <br /> for agents &amp; chain

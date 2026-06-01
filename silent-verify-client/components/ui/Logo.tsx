@@ -8,8 +8,9 @@ export function Logo() {
                 <Image
                     src="/img/silentverify-logo.png"
                     alt="Silent Verify"
-                    fill
+                    sizes=""
                     className="object-cover"
+                    fill={true}
                 />
             </div>
             <div>

@@ -1,4 +1,4 @@
-import { Hero, Flow, Plans } from "@/components/blocks/home";
+import { Hero, Flow, Plans, SupportedChains } from "@/components/blocks/home";
 
 export default function Page() {
     return (
@@ -6,6 +6,7 @@ export default function Page() {
             <Hero />
             <Flow />
             <Plans />
+            <SupportedChains />
         </>
     );
 }

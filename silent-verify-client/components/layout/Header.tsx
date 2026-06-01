@@ -85,7 +85,7 @@ export default function Header() {
                     <div className="flex md:hidden">
                         <Button
                             variant="outline"
-                            size="icon-lg"
+                            size="icon"
                             onClick={() => setOpen(true)}
                         >
                             <Menu />

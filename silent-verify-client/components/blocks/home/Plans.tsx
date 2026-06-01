@@ -1,4 +1,5 @@
 import { Container } from "@/components/layout";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 
 const plans = [
@@ -44,31 +45,39 @@ const plans = [
 
 export default function Plans() {
     return (
-        <section>
+        <section className="section">
             <Container className="flex flex-col gap-4">
                 <h2>Plans & Pricing</h2>
-                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto sunt molestias a voluptates, doloremque ut.</p>
-                <div className="flex flex-col items-center justify-between gap-8 mt-8 md:flex-row">
+                <p>
+                    Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                    Architecto sunt molestias a voluptates, doloremque ut.
+                </p>
+                <div className="flex flex-col items-stretch justify-between gap-8 mt-8 md:flex-row">
                     {plans.map((plan, index) => (
                         <article
-                            className="w-full p-6 flex flex-col gap-4 border border-border bg-surface rounded-2xl"
+                            className="w-full p-6 flex flex-col justify-between gap-8 border border-border bg-surface rounded-2xl"
                             key={`plan-${index}`}
                         >
-                            <h3>{plan.title}</h3>
+                            <Badge variant="outline">{plan.title}</Badge>
                             {typeof plan.price === "string" ? (
-                                <div className="">{plan.price}</div>
+                                <div className="text-2xl font-bold">
+                                    {plan.price}
+                                </div>
                             ) : (
-                                <div className="">
-                                    <span>
-                                        {plan.price.currency}/
-                                        {plan.price.amount}
-                                    </span>
-                                    <small>{plan.price.interval}</small>
+                                <div className="text-4xl font-bold">
+                                    {plan.price.currency}
+                                    {plan.price.amount}
+                                    <small className="text-base text-muted-foreground font-medium">
+                                        &nbsp;/&nbsp;{plan.price.interval}
+                                    </small>
                                 </div>
                             )}
-                            <ul className="flex flex-col gap-2">
+                            <ul className="flex flex-1 flex-col gap-2">
                                 {plan.features.map((feature, index) => (
-                                    <li className="" key={`feature-${index}`}>
+                                    <li
+                                        className="flex items-start"
+                                        key={`feature-${index}`}
+                                    >
                                         <span className="text-green-500 mr-2">
                                             ✓
                                         </span>
@@ -76,7 +85,7 @@ export default function Plans() {
                                     </li>
                                 ))}
                             </ul>
-                            <Button size="lg">{plan.action}</Button>
+                            <Button>{plan.action}</Button>
                         </article>
                     ))}
                 </div>
