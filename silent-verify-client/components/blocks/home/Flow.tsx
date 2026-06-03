@@ -1,5 +1,4 @@
 import { Container } from "@/components/layout";
-import { Button } from "@/components/ui/Button";
 
 const steps = [
     {
@@ -22,9 +21,7 @@ export default function Flow() {
     return (
         <section className="section">
             <Container className="flex flex-col gap-4">
-                <small className="uppercase text-primary">
-                    // How it works
-                </small>
+                <small className="uppercase text-primary">How it works</small>
                 <h2>
                     Three Steps <br /> One Result
                 </h2>

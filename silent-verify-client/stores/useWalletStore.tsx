@@ -9,8 +9,8 @@ type WalletStore = {
 
 export const useWalletStore = create<WalletStore>()(
     persist(
-        (set, get) => ({
-            certs: [],
+        () => ({
+            certs: [] as WalletStore["certs"],
         }),
         {
             name: STORAGE_KEY,

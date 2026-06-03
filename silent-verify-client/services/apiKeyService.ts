@@ -1,14 +1,15 @@
 import { api } from "@/api/client";
 
-async function validateKey(key) {
+export async function validateKey(key: string): Promise<boolean> {
     const resp = await api.post("/billing/validate-key", {
-        headers: { "X-API-key": key },
+        headers: { "X-API-Key": key },
     });
     const data = await resp.json();
-    return data.valid;
+    return Boolean(data.valid);
 }
 
-async function fetchNewKey() {
+export async function fetchNewKey(): Promise<string> {
     const resp = await api.post("/billing/free-key");
-    const data = resp.key;
+    const data = await resp.json();
+    return data.key as string;
 }

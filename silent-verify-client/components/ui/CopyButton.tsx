@@ -4,7 +4,7 @@ import { useCopyToClipboard } from "@/hooks";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
-import { Clipboard, Copy } from "lucide-react";
+import { Clipboard } from "lucide-react";
 
 export function CopyButton({
     value,

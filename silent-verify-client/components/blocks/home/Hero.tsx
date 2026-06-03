@@ -1,7 +1,6 @@
 import { Container } from "@/components/layout";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Bell } from "lucide-react";
 
 export default function Hero() {
     return (

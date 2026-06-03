@@ -5,7 +5,7 @@ import { Logo } from "@/components/ui/Logo";
 import Link from "next/link";
 import { SiGithub } from "@icons-pack/react-simple-icons";
 import { Button } from "@/components/ui/Button";
-import { Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useState } from "react";
 
 export default function Header() {

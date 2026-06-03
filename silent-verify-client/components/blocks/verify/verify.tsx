@@ -1,56 +1,15 @@
 "use client";
 
-import { useWalletStore } from "@/stores";
 import { Container } from "@/components/layout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { Button } from "@/components/ui/Button";
 import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/ButtonGroup";
 import { LinkButton } from "@/components/ui/LinkButton";
-import { Field, FieldLabel } from "@/components/ui/Field";
+import { Field } from "@/components/ui/Field";
 import { Textarea } from "@/components/ui/Textarea";
 
-const CertResult = (data, wire) => {
-    const ok = data.valid;
-    const meta = wire.metadata;
-    const info = {
-        crypto: ok ? "PASS" : "FAIL",
-        type: data.cert_type ?? meta.cert_type ?? "-",
-        pubkey: data.pubkey_fp ?? meta.pubkey_fp ?? "-",
-        agentDID: meta.agent_did ?? "-",
-    };
-    return (
-        <div>
-            <h2>{ok ? "Valid Certificate" : "Invalid or tampered"}</h2>
-            <dl>
-                <div>
-                    <dt>Crypto</dt>
-                    <dd>{info.crypto}</dd>
-                </div>
-                <div>
-                    <dt>Type</dt>
-                    <dd>{info.type}</dd>
-                </div>
-                <div>
-                    <dt>Agent DID</dt>
-                    <dd>{info.agent_did}</dd>
-                </div>
-                <div>
-                    <dt>Public Key</dt>
-                    <dd>{info.pubkey}</dd>
-                </div>
-                {data.detail && (
-                    <div>
-                        <dt>Detail</dt>
-                        <dd>{data.detail}</dd>
-                    </div>
-                )}
-            </dl>
-        </div>
-    );
-};
-
 export function Verify() {
-    const certs = [];
+    const certs: Array<{ id: string }> = [];
     // const { certs } = useWalletStore((state) => state.certs);
     return (
         <section className="section-sm flex flex-col">
@@ -85,7 +44,7 @@ export function Verify() {
                         {certs.length ? (
                             <div>
                                 {certs.map((cert) => (
-                                    <div>
+                                    <div key={cert.id}>
                                         <div>
                                             <span>Lorem ipsum</span>
                                             <span>Saved 28/06/2026</span>

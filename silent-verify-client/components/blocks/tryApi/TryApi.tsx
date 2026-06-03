@@ -1,8 +1,5 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { BASE } from "@/config";
-import { useWalletStore, useApiKeyStore } from "@/stores";
 import { Container } from "@/components/layout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { CodeBlock } from "@/components/ui/CodeBlock";

@@ -3,10 +3,10 @@ import { persist } from "zustand/middleware";
 
 const STORAGE_KEY = process.env.NEXT_PUBLIC_STORAGE_PREFIX ?? "";
 
-type ApiKeyStore = {};
+type ApiKeyStore = Record<string, never>;
 
 export const useApiKeyStore = create<ApiKeyStore>()(
-    persist((set, get) => ({}), {
+    persist(() => ({}), {
         name: STORAGE_KEY,
     })
 );
