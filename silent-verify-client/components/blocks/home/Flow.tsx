@@ -23,7 +23,7 @@ export default function Flow() {
         <section className="section">
             <Container className="flex flex-col gap-4">
                 <small className="uppercase text-primary">
-                    // How it works
+                    How it works
                 </small>
                 <h2>
                     Three Steps <br /> One Result

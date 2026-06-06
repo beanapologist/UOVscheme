@@ -1,9 +1,39 @@
+"use client";
+
+import { useState } from "react";
 import { Container } from "@/components/layout";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Bell } from "lucide-react";
+import { useEnsureApiKey } from "@/hooks/useEnsureApiKey";
+import { toMessage } from "@/utils/functions";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { ApiKeyDialog } from "@/components/shared/dialog";
 
 export default function Hero() {
+    const router = useRouter();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const { mutateAsync: ensureApiKey } = useEnsureApiKey();
+
+    const handleFreeKey = async () => {
+        try {
+            await ensureApiKey();
+            setIsModalOpen(true);
+        } catch (error) {
+            const err = toMessage(error);
+            toast.error(err);
+        }
+    };
+
+    const handleApiDemo = async () => {
+        try {
+            await ensureApiKey();
+            router.push("/docs?demo=agent&run=1");
+        } catch (error) {
+            const err = toMessage(error);
+            toast.error(err);
+        }
+    };
     return (
         <section className="section">
             <Container className="flex flex-col gap-4">
@@ -28,13 +58,27 @@ export default function Hero() {
                     </Badge>
                 </div>
                 <div className="flex flex-wrap items-center gap-4 mb-0">
-                    <Button variant="default" size="lg">
+                    <Button
+                        variant="default"
+                        size="lg"
+                        onClick={() => handleApiDemo()}
+                    >
                         Try live demo
                     </Button>
-                    <Button variant="outline" size="lg">
+                    <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => handleFreeKey()}
+                    >
                         Open API console
                     </Button>
                 </div>
+                {isModalOpen && (
+                    <ApiKeyDialog
+                        open={isModalOpen}
+                        onOpenChange={setIsModalOpen}
+                    />
+                )}
             </Container>
         </section>
     );

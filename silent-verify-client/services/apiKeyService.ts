@@ -1,6 +1,6 @@
 import { api } from "@/api/client";
 
-async function validateKey(key) {
+export async function validateKey(key: string) {
     const resp = await api.post("/billing/validate-key", {
         headers: { "X-API-key": key },
     });
@@ -8,7 +8,8 @@ async function validateKey(key) {
     return data.valid;
 }
 
-async function fetchNewKey() {
+export async function fetchNewKey() {
     const resp = await api.post("/billing/free-key");
-    const data = resp.key;
+    const data = await resp.json();
+    return data.api_key;
 }

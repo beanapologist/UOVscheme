@@ -12,7 +12,7 @@ export default function Header() {
     const [open, setOpen] = useState(false);
     return (
         <header
-            className="group/header h-(--header-height)"
+            className="group/header h-(--header-height) sticky top-0 left-0 z-2000 ring ring-border bg-background"
             data-open={open ? "" : undefined}
         >
             <Container className="h-full flex items-center justify-between">

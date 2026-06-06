@@ -1,6 +1,8 @@
 import { codeToHtml } from "shiki";
 import { TryApi } from "@/components/blocks/tryApi/TryApi";
 import { CodeBlock, CodeError } from "@/types";
+import { getParams } from "@/services/paramsService";
+import { highlight } from "@/lib/shiki";
 
 const BASE = process.env.NEXT_PUBLIC_APP_URL!;
 
@@ -37,12 +39,14 @@ const codeErrors = [
 ];
 
 export default async function Page() {
+    const params = await getParams();
     const blocks = (await Promise.all(
         codeBlocks.map(async (item) => ({
             title: item.title,
             block: {
                 code: item.block,
-                html: await codeToHtml(item.block, {
+                html: await highlight({
+                    code: item.block,
                     lang: "bash",
                     theme: "github-dark",
                 }),
@@ -51,5 +55,11 @@ export default async function Page() {
     )) as CodeBlock[];
     const errors = codeErrors as CodeError[];
 
-    return <TryApi codeBlocks={blocks} codeErrors={errors} />;
+    return (
+        <TryApi
+            codeBlocks={blocks}
+            codeErrors={errors}
+            devKeyAllowed={params.auth.dev_key_enabled}
+        />
+    );
 }
