@@ -37,9 +37,9 @@ function Alert({
     );
 }
 
-function AlertClose({ className, ...props }: React.ComponentProps<"div">) {
+function AlertClose({ className, ...props }: React.ComponentProps<"button">) {
     return (
-        <div data-slot="alert-close" className={cn("", className)} {...props} />
+        <Button data-slot="alert-close" className={cn("", className)} {...props} />
     );
 }
 
@@ -72,4 +72,4 @@ function AlertDescription({
     );
 }
 
-export { Alert, AlertTitle, AlertDescription };
+export { Alert, AlertTitle, AlertClose, AlertDescription };

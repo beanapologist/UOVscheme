@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { verifyPublicCert } from "@/services/certsService";
 import { toMessage } from "@/utils/functions";
 import { VerifyCertResult } from "./VerifyCertResult";
+import { Input } from "@/components/ui/Input";
 
 type Json = string | null;
 type Data = {
@@ -90,7 +91,7 @@ export function Verify() {
         if (!walletId) return;
         if (!runQuery) return;
         verifyCert(json);
-    }, [walletId, runQuery, json, verifyCert]);
+    }, [walletId, runQuery, json]);
 
     return (
         <section className="section-sm flex flex-col">
@@ -101,9 +102,7 @@ export function Verify() {
                     saved cert. Verification is cryptographic only - no API key
                     required.
                 </p>
-                {data && (
-                    <VerifyCertResult data={data.data} wire={data.wire} />
-                )}
+                {data && <VerifyCertResult data={data.data} wire={data.wire} />}
                 <Field>
                     <Textarea placeholder="Paste the full cert object from POST .../issue (the cert field)" />
                 </Field>
@@ -165,7 +164,15 @@ export function Verify() {
                             <div>No saved certs</div>
                         )}
                     </TabsContent>
-                    <TabsContent value="upload_certificates"></TabsContent>
+                    <TabsContent value="upload_certificates">
+                        <Field>
+                            <Input
+                                type="file"
+                                accept=".json, application/json"
+                                onChange={handleFile}
+                            />
+                        </Field>
+                    </TabsContent>
                 </Tabs>
                 <div className="flex flex-wrap items-center gap-2">
                     <Button variant="default" onClick={() => verifyCert(json)}>

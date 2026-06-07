@@ -11,7 +11,7 @@ type ApiKeyStore = {
 
 export const useApiKeyStore = create<ApiKeyStore>()(
     persist(
-        (set, get) => ({
+        (set) => ({
             apiKey: "",
             setApiKey: (key) =>
                 set({

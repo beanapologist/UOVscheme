@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useApiKeyStore } from "@/stores";
-import { useShallow } from "zustand/react/shallow";
+// import { useShallow } from "zustand/react/shallow";
 import { validateKey, fetchNewKey } from "@/services/apiKeyService";
 
 export const useEnsureApiKey = () => {

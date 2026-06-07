@@ -27,7 +27,7 @@ import {
     Binary,
     ChevronRight,
     Fingerprint,
-    Grid3X3,
+    // Grid3X3,
     TriangleAlert,
 } from "lucide-react";
 import type {
@@ -73,6 +73,7 @@ type HandleFlowChange = React.ChangeEvent<
 >;
 type HandleFlowAction = (typeof USE_PROCESS)[number]["action"]["type"];
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const isLocalhost =
     typeof window !== "undefined" &&
     ["localhost", "127.0.0.1"].includes(window.location.hostname);
@@ -117,13 +118,14 @@ export function TryApi({
         toast("Saved to My certs — verify at /verify?id=" + entry.id);
     };
 
-    const loadCert = (cert: Wire) => {
+    const loadInTabs = (cert: Wire) => {
         saveLastCert(cert);
         toast("Loaded into Verify / Print tabs");
     };
 
     const previewCert = () => {
-        window.open("/api/v1/certs/print/demo?autoprint=1", "_blank");
+        const url = `${API_URL}/api/v1/certs/print/demo?autoprint=1`;
+        window.open(url, "_blank");
     };
 
     const resolveCert = (cert: string, lastCert: string) => {
@@ -163,6 +165,7 @@ export function TryApi({
             // show in code block
         } catch (error) {
             const err = toMessage(error);
+            console.error(err);
             // show in code block
         }
     };
@@ -200,6 +203,7 @@ export function TryApi({
             updateCert(data.cert);
         } catch (error) {
             const err = toMessage(error);
+            console.error(err);
             // show in code block
         }
     };
@@ -216,7 +220,7 @@ export function TryApi({
         } catch (error) {
             const err = toMessage(error);
             // show in code block
-            console.log(err)
+            console.error(err);
         }
     };
 
@@ -242,7 +246,7 @@ export function TryApi({
             const data = await verifyApiKeyApi(apiKey);
             if (data.valid) return true;
             clearApiKey();
-            toast.error(
+            throw new Error(
                 data.hint ?? "This key is not registered on the server"
             );
         } catch (error) {
@@ -253,16 +257,18 @@ export function TryApi({
     };
 
     const assignApiKey = async (apiKey: string, devKeyAllowed: boolean) => {
-        if (!apiKey) {
+        if (apiKey) {
+            await verifyApiKey(apiKey, devKeyAllowed);
+        } else {
             if (devKeyAllowed) {
-                setApiKey("sv_dev_test_key");
-                toast.info("Hello");
+                const devKey = "sv_dev_test_key";
                 keyRef.current!.placeholder = "sv_dev_test_key (local data)";
+                setApiKey(devKey);
+                await verifyApiKey(devKey, devKeyAllowed);
             } else {
                 toast.info("Click Get free API key to call issue endpoints.");
             }
         }
-        await verifyApiKey(apiKey, devKeyAllowed);
     };
 
     const formatCapsChange = (c: FormatCapsChange) => {
@@ -344,7 +350,7 @@ export function TryApi({
             certificate: cert,
             certificate_optional: cert,
         }));
-    }, [lastCert, stringify, setFlow]);
+    }, [lastCert, setFlow]);
 
     /*
     useEffect(() => {
@@ -355,12 +361,9 @@ export function TryApi({
     }, []);
     */
 
-    /*
     useEffect(() => {
         assignApiKey(apiKey, isDevKeyAllowed);
-    }, [apiKey, isDevKeyAllowed, assignApiKey]);
-    */
-
+    }, []);
     return (
         <section className="section-sm flex flex-col">
             <Container className="flex-1 flex flex-col gap-8">
@@ -730,7 +733,11 @@ export function TryApi({
                                                         }
                                                     />
                                                     <Button
-                                                        onClick={() => null}
+                                                        onClick={() =>
+                                                            loadInTabs(
+                                                                cert.cert
+                                                            )
+                                                        }
                                                     >
                                                         Load in tabs
                                                     </Button>

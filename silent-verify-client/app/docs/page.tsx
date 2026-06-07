@@ -1,4 +1,3 @@
-import { codeToHtml } from "shiki";
 import { TryApi } from "@/components/blocks/tryApi/TryApi";
 import { CodeBlock, CodeError } from "@/types";
 import { getParams } from "@/services/paramsService";

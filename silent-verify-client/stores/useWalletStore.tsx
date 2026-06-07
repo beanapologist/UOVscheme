@@ -15,7 +15,7 @@ type WalletStore = {
 
 export const useWalletStore = create<WalletStore>()(
     persist(
-        (set, get) => ({
+        (set) => ({
             certs: [],
             lastCert: null,
             saveCert: (wire, label) => {

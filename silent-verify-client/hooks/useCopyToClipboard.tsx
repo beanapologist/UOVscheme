@@ -80,7 +80,7 @@ export function useCopyToClipboard(notify = false, timeout = 1500) {
                 options?.onFailure?.(err);
             }
         },
-        [timeout]
+        [notify, timeout]
     );
 
     return { copied, copy };
