@@ -1,6 +1,6 @@
-import { Wire } from "@/types";
+import { CertResult } from "@/types";
 
-export function VerifyCertResult({ data, wire }: { data: any; wire: Wire }) {
+export function VerifyCertResult({ data, wire }: CertResult) {
     const ok = data.valid;
     const meta = wire.metadata;
     const info = {

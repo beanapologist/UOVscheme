@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { createHighlighter } from "shiki";
+import { createHighlighter, type Highlighter } from "shiki";
 
 const THEMES = ["github-dark", "github-light"] as const;
 const LANGS = ["json", "bash", "typescript", "javascript"] as const;
@@ -13,14 +13,16 @@ const HighlightSchema = z.object({
 
 type HighlightInput = z.infer<typeof HighlightSchema>;
 
-let highlighterPromise: ReturnType<typeof createHighlighter> | null = null;
+const g = globalThis as typeof globalThis & {
+    __shikiHighlighter?: Promise<Highlighter>;
+};
 
 function getHighlighter() {
-    highlighterPromise ??= createHighlighter({
+    g.__shikiHighlighter ??= createHighlighter({
         themes: [...THEMES],
         langs: [...LANGS],
     });
-    return highlighterPromise;
+    return g.__shikiHighlighter;
 }
 
 export async function highlight(input: HighlightInput) {

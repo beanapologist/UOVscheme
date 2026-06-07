@@ -25,11 +25,14 @@ export default function Header() {
             <Container className="h-full flex items-center justify-between">
                 <Logo />
                 <Button
-                    className="md:hidden"
-                    variant="outline"
+                    className="w-5 h-4 flex flex-col justify-between md:hidden"
+                    size="icon"
+                    variant="ghost"
                     onClick={() => setOpen(!open)}
                 >
-                    <span className="w-full h-px" />
+                    <span className="w-full h-0.5 bg-foreground group-data-open/header:rotate-0" />
+                    <span className="w-full h-0.5 bg-foreground" />
+                    <span className="w-full h-0.5 bg-foreground group-data-open/header:rotate-0" />
                 </Button>
                 <nav className="hidden md:flex">
                     <ul className="flex flex-row items-center gap-5">
@@ -40,9 +43,8 @@ export default function Header() {
                         ))}
                     </ul>
                 </nav>
-                <nav className="w-full h-full fixed top-(--header-height) left-0 z-1000 -translate-x-full bg-background md:hidden">
-
-                    <ul className="flex flex-col">
+                <nav className="w-full h-[calc(100%-var(--header-height))] fixed bottom-0 left-0 -z-1000 transition-transform duration-200 translate-x-full bg-background group-data-open/header:translate-x-full md:hidden">
+                    <ul className="flex flex-col gap-4">
                         {links.map(({ name, href }) => (
                             <li key={name}>
                                 <Link href={href}>{name}</Link>

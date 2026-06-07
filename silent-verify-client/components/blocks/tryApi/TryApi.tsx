@@ -1,7 +1,5 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useWalletStore, useApiKeyStore } from "@/stores";
 import { Container } from "@/components/layout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { CodeBlock } from "@/components/ui/CodeBlock";
@@ -63,8 +61,15 @@ import { Badge } from "@/components/ui/Badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/RadioGroup";
 import { Label } from "@/components/ui/Label";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { useApiKeyStore, useWalletStore } from "@/stores";
 
 type Tabs = (typeof TAB_ACTIONS)[keyof typeof TAB_ACTIONS];
+type Load = {
+    cert: Flow["certificate"];
+    type: Flow["type"];
+    lastCert: Flow["certificate"];
+};
 
 type FormatCapsChange = Flow["agent_caps"];
 type HandleTypeChange = Flow["type"];
@@ -208,7 +213,11 @@ export function TryApi({
         }
     };
 
-    const handleVerify = async (apiKey: string, flow: Flow) => {
+    const openPrint = (apiKey: string, load: Omit<Load, "type">) => {
+        const cert = resolveCert(load.cert, load.lastCert);
+    };
+
+    const handleVerify = async (apiKey: string, flow: Load) => {
         try {
             const cert = resolveCert(flow.cert, flow.lastCert);
             if (!cert) return;
@@ -352,14 +361,14 @@ export function TryApi({
         }));
     }, [lastCert, setFlow]);
 
-    /*
     useEffect(() => {
-        if (demo === "agent") return;
-        handleFlowAction("agent_pki");
-        if (Number(run) == 1) return;
-        handleAgent(apiKey, flow);
+        if (demo === "agent") {
+            handleFlowAction("agent_pki");
+        }
+        if (Number(run) == 1) {
+            handleAgent(apiKey, flow);
+        }
     }, []);
-    */
 
     useEffect(() => {
         assignApiKey(apiKey, isDevKeyAllowed);
@@ -637,7 +646,13 @@ export function TryApi({
                             </CardContent>
                             <CardFooter>
                                 <Button
-                                    onClick={() => handleVerify(apiKey, flow)}
+                                    onClick={() =>
+                                        handleVerify(apiKey, {
+                                            type: flow.type,
+                                            cert: flow.certificate,
+                                            lastCert: lastCert,
+                                        })
+                                    }
                                 >
                                     Verify
                                 </Button>

@@ -2,7 +2,7 @@ import { api } from "@/api/client";
 
 export async function validateKey(key: string) {
     const resp = await api.post("/billing/validate-key", {
-        headers: { "X-API-key": key },
+        headers: { "X-API-Key": key },
     });
     const data = await resp.json();
     return data.valid;

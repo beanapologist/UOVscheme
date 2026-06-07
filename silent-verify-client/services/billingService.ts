@@ -1,7 +1,7 @@
 import { api } from "@/api/client";
 
 export async function verifyApiKey(key: string) {
-    const resp = await api.post("/billing/validate-key", {
+    const resp = await api.get("/billing/validate-key", {
         headers: { "X-API-key": key },
     });
     const data = await resp.json();

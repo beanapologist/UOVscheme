@@ -63,6 +63,8 @@ export async function verifyStateCert(key: string, cert: Wire) {
     });
     const text = await resp.text();
     const json = parseJSON(text);
+    // const data = json.success ? json.data : text;
+    // return data as Wire;
     return json.success ? json.data : text;
 }
 
@@ -75,11 +77,22 @@ export async function verifyAgentCert(key: string, cert: Wire) {
     });
     const text = await resp.text();
     const json = parseJSON(text);
+    // const data = json.success ? json.data : text;
+    // return data as Wire;
     return json.success ? json.data : text;
 }
 
-export async function getPrintCert(wire: Wire) {
-    const resp = await api.post("/certs/print/public", {
+export async function getCertHtml(wire: Wire, autoprint = false) {
+    const q = autoprint ? "?autoprint=1" : "";
+    const resp = await api.post("/certs/print" + q, {
+        body: JSON.stringify({ cert: wire }),
+    });
+    const html = await resp.text();
+    return html;
+}
+
+export async function getCertHtmlPublic(wire: Wire) {
+    const resp = await api.post("/certs/print/public?autoprint=1", {
         body: JSON.stringify({ cert: wire }),
     });
     const html = await resp.text();

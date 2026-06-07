@@ -1,5 +1,4 @@
 "use client";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useWalletStore } from "@/stores";
 import { Container } from "@/components/layout";
@@ -9,23 +8,24 @@ import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/ButtonGroup";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { Field } from "@/components/ui/Field";
 import { Textarea } from "@/components/ui/Textarea";
-import { Wire } from "@/types";
+import { CertResult, Wire } from "@/types";
 import { toast } from "sonner";
-import { verifyPublicCert } from "@/services/certsService";
-import { toMessage } from "@/utils/functions";
+import { getCertHtmlPublic, verifyPublicCert } from "@/services/certsService";
+import {
+    downloadJSON,
+    openHtmlFile,
+    stringify,
+    toMessage,
+} from "@/utils/functions";
 import { VerifyCertResult } from "./VerifyCertResult";
 import { Input } from "@/components/ui/Input";
+import { useQueryParams } from "@/hooks";
 
 type Json = string | null;
-type Data = {
-    data: any;
-    wire: Wire;
-} | null;
+type Data = CertResult | null;
 
 export function Verify() {
-    const searchParams = useSearchParams();
-    const walletId = searchParams.get("id");
-    const runQuery = searchParams.get("run");
+    const { certId, run } = useQueryParams({ certId: "id", run: "run" });
 
     const [json, setJson] = useState<Json>(null);
     const [data, setData] = useState<Data>(null);
@@ -41,16 +41,24 @@ export function Verify() {
         return (rawData.cert ?? rawData) as Wire;
     };
 
-    const updateJson = (cert: Wire) => {
-        const data = JSON.stringify(cert, null, 2);
-        setJson(data);
-        return data;
+    const updateJson = (cert: Json) => {
+        setJson(cert);
     };
 
     const commitCert = (cert: Json) => {
         try {
             const wire = decodeCert(cert);
             saveCert(wire);
+        } catch (error) {
+            const err = toMessage(error);
+            toast.error(err);
+        }
+    };
+
+    const exportCert = (cert: Json) => {
+        try {
+            const json = decodeCert(cert);
+            downloadJSON(json);
         } catch (error) {
             const err = toMessage(error);
             toast.error(err);
@@ -65,11 +73,21 @@ export function Verify() {
         if (!file.type.endsWith("/json")) return;
 
         const text = await file.text();
-        setJson(text);
+        updateJson(text);
     };
 
-    const verifyCert = async (c) => {
-        const cert = c ? updateJson(c) : json;
+    const renderHtml = async (cert: Json) => {
+        try {
+            const wire = decodeCert(cert);
+            const html = await getCertHtmlPublic(wire);
+            openHtmlFile(html);
+        } catch (error) {
+            const err = toMessage(error);
+            toast.error(err);
+        }
+    };
+
+    const verifyCert = async (cert: Json) => {
         try {
             const wire = decodeCert(cert);
             const data = await verifyPublicCert(wire);
@@ -81,17 +99,17 @@ export function Verify() {
     };
 
     useEffect(() => {
-        if (!walletId) return;
-        const existing = certs.find((c) => c.id === walletId);
-        if (!existing) return;
-        updateJson(existing.cert);
-    }, [walletId, certs]);
+        if (!certId) return;
+        const exists = certs.find((c) => c.id === certId);
+        if (!exists) return;
+        const data = stringify(exists);
+        updateJson(data);
 
-    useEffect(() => {
-        if (!walletId) return;
-        if (!runQuery) return;
-        verifyCert(json);
-    }, [walletId, runQuery, json]);
+        const shouldRun = Number(run) === 1;
+        if (shouldRun) {
+            verifyCert(data);
+        }
+    }, []);
 
     return (
         <section className="section-sm flex flex-col">
@@ -104,7 +122,11 @@ export function Verify() {
                 </p>
                 {data && <VerifyCertResult data={data.data} wire={data.wire} />}
                 <Field>
-                    <Textarea placeholder="Paste the full cert object from POST .../issue (the cert field)" />
+                    <Textarea
+                        value={json ?? ""}
+                        onChange={(e) => updateJson(e.target.value)}
+                        placeholder="Paste the full cert object from POST .../issue (the cert field)"
+                    />
                 </Field>
                 <Tabs
                     className="flex-1 gap-8"
@@ -134,22 +156,29 @@ export function Verify() {
                                         </div>
                                         <ButtonGroup>
                                             <Button
+                                                variant="outline"
                                                 onClick={() =>
-                                                    updateJson(cert.cert)
+                                                    updateJson(
+                                                        stringify(cert.cert)
+                                                    )
                                                 }
                                             >
                                                 Load
                                             </Button>
                                             <ButtonGroupSeparator />
                                             <Button
+                                                variant="outline"
                                                 onClick={() =>
-                                                    verifyCert(cert.cert)
+                                                    verifyCert(
+                                                        stringify(cert.cert)
+                                                    )
                                                 }
                                             >
                                                 Verify
                                             </Button>
                                             <ButtonGroupSeparator />
                                             <Button
+                                                variant="outline"
                                                 onClick={() =>
                                                     removeCert(cert.id)
                                                 }
@@ -166,11 +195,7 @@ export function Verify() {
                     </TabsContent>
                     <TabsContent value="upload_certificates">
                         <Field>
-                            <Input
-                                type="file"
-                                accept=".json, application/json"
-                                onChange={handleFile}
-                            />
+                            <Input type="file" onChange={handleFile} />
                         </Field>
                     </TabsContent>
                 </Tabs>
@@ -181,8 +206,12 @@ export function Verify() {
                     <Button variant="outline" onClick={() => commitCert(json)}>
                         Save to wallet
                     </Button>
-                    <Button variant="outline">Print / PDF</Button>
-                    <Button variant="outline">Download JSON</Button>
+                    <Button variant="outline" onClick={() => renderHtml(json)}>
+                        Print / PDF
+                    </Button>
+                    <Button variant="outline" onClick={() => exportCert(json)}>
+                        Download JSON
+                    </Button>
                 </div>
             </Container>
         </section>

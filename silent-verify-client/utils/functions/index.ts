@@ -43,3 +43,47 @@ export function toMessage(e: unknown) {
         return String(e);
     }
 }
+
+export function downloadJSON(wire: Wire, filename?: string) {
+    const blob = new Blob([stringify(wire)], {
+        type: "application/json",
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download =
+        filename ??
+        `silentverify-cert-${(wire.pubkey_fp || "export").slice(0, 8)}.json`;
+
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+export function openHtmlFile(content: BlobPart | BlobPart[]) {
+    const blob = new Blob(Array.isArray(content) ? content : [content], {
+        type: "text/html",
+    });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank");
+
+    if (!win) {
+        URL.revokeObjectURL(url);
+        throw new Error("Popup blocked");
+    }
+
+    let revoked = false;
+    const cleanup = () => {
+        if (revoked) return;
+        URL.revokeObjectURL(url);
+    };
+
+    win.onload = cleanup;
+    setTimeout(cleanup, 60_000);
+
+    return win;
+}

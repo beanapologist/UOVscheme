@@ -1,4 +1,4 @@
 export const BASE =
     typeof window === "undefined"
-        ? "http://localhost:3000" ?? ""
+        ? (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000")
         : window.location.origin;

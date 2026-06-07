@@ -43,3 +43,13 @@ export type Cert = {
     savedAt: string;
     cert: Wire;
 };
+
+export type CertResult = {
+    wire: Wire;
+    data: {
+        valid: boolean;
+        cert_type: string;
+        pubkey_fp: string;
+        detail: string;
+    };
+};
