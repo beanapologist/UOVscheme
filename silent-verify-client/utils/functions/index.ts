@@ -79,6 +79,7 @@ export function openHtmlFile(content: BlobPart | BlobPart[]) {
     let revoked = false;
     const cleanup = () => {
         if (revoked) return;
+        revoked = true;
         URL.revokeObjectURL(url);
     };
 

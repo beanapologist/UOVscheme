@@ -103,12 +103,14 @@ export function Verify() {
         const exists = certs.find((c) => c.id === certId);
         if (!exists) return;
         const data = stringify(exists);
-        updateJson(data);
-
-        const shouldRun = Number(run) === 1;
-        if (shouldRun) {
-            verifyCert(data);
-        }
+        queueMicrotask(() => {
+            updateJson(data);
+            if (Number(run) === 1) {
+                void verifyCert(data);
+            }
+        });
+        // Hydrate from URL query params once on mount.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (

@@ -47,8 +47,9 @@ yarn install  # or: yarn
 Create a `.env` file in the root of the `client/` folder:
 
 ```env
-NEXT_PUBLIC_API_URL=http://127.0.0.1:5173
-NEXT_PUBLIC_OPENAPI_URL=${NEXT_PUBLIC_API_URL}/openapi.json
+NEXT_PUBLIC_API_URL=http://localhost:8765
+NEXT_PUBLIC_OPENAPI_URL=http://localhost:8765/openapi.json
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_APP_NAME=
 NEXT_PUBLIC_APP_ENV=                        # dev | staging | prod
 ```

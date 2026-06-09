@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { TryApi } from "@/components/blocks/tryApi/TryApi";
 import { CodeBlock, CodeError } from "@/types";
 import { getParams } from "@/services/paramsService";
@@ -55,10 +56,12 @@ export default async function Page() {
     const errors = codeErrors as CodeError[];
 
     return (
-        <TryApi
-            codeBlocks={blocks}
-            codeErrors={errors}
-            devKeyAllowed={params.auth.dev_key_enabled}
-        />
+        <Suspense fallback={null}>
+            <TryApi
+                codeBlocks={blocks}
+                codeErrors={errors}
+                devKeyAllowed={params.auth.dev_key_enabled}
+            />
+        </Suspense>
     );
 }

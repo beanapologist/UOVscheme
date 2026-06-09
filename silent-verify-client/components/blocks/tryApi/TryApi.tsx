@@ -213,10 +213,6 @@ export function TryApi({
         }
     };
 
-    const openPrint = (apiKey: string, load: Omit<Load, "type">) => {
-        const cert = resolveCert(load.cert, load.lastCert);
-    };
-
     const handleVerify = async (apiKey: string, flow: Load) => {
         try {
             const cert = resolveCert(flow.cert, flow.lastCert);
@@ -354,24 +350,27 @@ export function TryApi({
     useEffect(() => {
         if (!lastCert) return;
         const cert = stringify(lastCert);
-        setFlow((prev) => ({
-            ...prev,
-            certificate: cert,
-            certificate_optional: cert,
-        }));
-    }, [lastCert, setFlow]);
+        queueMicrotask(() => {
+            setFlow((prev) => ({
+                ...prev,
+                certificate: cert,
+                certificate_optional: cert,
+            }));
+        });
+    }, [lastCert]);
 
     useEffect(() => {
-        if (demo === "agent") {
-            handleFlowAction("agent_pki");
-        }
-        if (Number(run) == 1) {
-            handleAgent(apiKey, flow);
-        }
-    }, []);
-
-    useEffect(() => {
-        assignApiKey(apiKey, isDevKeyAllowed);
+        queueMicrotask(() => {
+            if (demo === "agent") {
+                handleFlowAction("agent_pki");
+            }
+            if (Number(run) === 1) {
+                void handleAgent(apiKey, flow);
+            }
+            assignApiKey(apiKey, isDevKeyAllowed);
+        });
+        // Hydrate from URL query params once on mount.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     return (
         <section className="section-sm flex flex-col">
@@ -650,7 +649,9 @@ export function TryApi({
                                         handleVerify(apiKey, {
                                             type: flow.type,
                                             cert: flow.certificate,
-                                            lastCert: lastCert,
+                                            lastCert: lastCert
+                                                ? stringify(lastCert)
+                                                : "",
                                         })
                                     }
                                 >

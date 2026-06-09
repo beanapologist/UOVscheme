@@ -1,5 +1,10 @@
-import { Verify } from "@/components/blocks/verify/Verify";
+import { Suspense } from "react";
+import { Verify } from "@/components/blocks/verify/verify";
 
 export default function Page() {
-    return <Verify />;
+    return (
+        <Suspense fallback={null}>
+            <Verify />
+        </Suspense>
+    );
 }
