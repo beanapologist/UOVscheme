@@ -2,7 +2,7 @@
 
 import { Container } from "@/components/layout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
-import { CodeBlock } from "@/components/ui/CodeBlock";
+import { CodeBlock, CodeBlockContent } from "@/components/ui/CodeBlock";
 import { LinkButton } from "@/components/ui/LinkButton";
 import {
     Collapsible,
@@ -463,10 +463,11 @@ export function TryApi({
                                             key={title}
                                         >
                                             <h4>{title}</h4>
-                                            <CodeBlock
-                                                html={block.html}
-                                                code={block.code}
-                                            />
+                                            <CodeBlock>
+                                                <CodeBlockContent
+                                                    html={block.html}
+                                                />
+                                            </CodeBlock>
                                         </li>
                                     ))}
                                 </ol>

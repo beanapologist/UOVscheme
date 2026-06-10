@@ -15,6 +15,7 @@ import {
     downloadJSON,
     openHtmlFile,
     stringify,
+    toLocalDate,
     toMessage,
 } from "@/utils/functions";
 import { VerifyCertResult } from "./VerifyCertResult";
@@ -149,16 +150,23 @@ export function Verify() {
                             saved here for quick verify and print.
                         </p>
                         {certs.length ? (
-                            <div>
+                            <div className="flex flex-col">
                                 {certs.map((cert) => (
-                                    <div className="" key={cert.id}>
-                                        <div>
+                                    <div
+                                        className="py-3 flex items-center justify-between border-b border-b-border"
+                                        key={cert.id}
+                                    >
+                                        <div className="flex flex-col">
                                             <span>{cert.label}</span>
-                                            <span>{cert.savedAt}</span>
+                                            <span>
+                                                Saved{" "}
+                                                {toLocalDate(cert.savedAt)}
+                                            </span>
                                         </div>
                                         <ButtonGroup>
                                             <Button
                                                 variant="outline"
+                                                size="lg"
                                                 onClick={() =>
                                                     updateJson(
                                                         stringify(cert.cert)
@@ -170,6 +178,7 @@ export function Verify() {
                                             <ButtonGroupSeparator />
                                             <Button
                                                 variant="outline"
+                                                size="lg"
                                                 onClick={() =>
                                                     verifyCert(
                                                         stringify(cert.cert)
@@ -181,6 +190,7 @@ export function Verify() {
                                             <ButtonGroupSeparator />
                                             <Button
                                                 variant="outline"
+                                                size="lg"
                                                 onClick={() =>
                                                     removeCert(cert.id)
                                                 }

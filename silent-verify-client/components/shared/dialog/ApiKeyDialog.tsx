@@ -36,8 +36,8 @@ export function ApiKeyDialog({
                         {/* Copy and store this API key securely. Do not share it publicly. */}
                     </DialogDescription>
                 </DialogHeader>
-                <div>
-                    <div>{apiKey}</div>
+                <div className="p-3 rounded-lg ring ring-support-foreground/20 bg-support text-support-foreground">
+                    <span>{apiKey}</span>
                 </div>
                 <DialogFooter>
                     <Button

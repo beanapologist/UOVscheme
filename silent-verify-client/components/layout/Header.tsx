@@ -35,9 +35,9 @@ export default function Header() {
                     <span className="w-full h-0.5 bg-foreground group-data-open/header:rotate-0" />
                 </Button>
                 <nav className="hidden md:flex">
-                    <ul className="flex flex-row items-center gap-5">
+                    <ul className="flex flex-row items-center gap-6">
                         {links.map(({ name, href }) => (
-                            <li key={name}>
+                            <li className="hover:text-primary" key={name}>
                                 <Link href={href}>{name}</Link>
                             </li>
                         ))}

@@ -4,19 +4,18 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { cn } from "@/lib/utils";
 import React from "react";
 
-function CodeBlock({ html, code }: { html: string; code: string }) {
-    return (
-        <div className="[--space:--spacing(4)] w-full h-full relative rounded-lg overflow-hidden">
-            <CopyButton
-                className="absolute top-2 right-2 bg-transparent!"
-                value={code}
-            />
-            <div
-                className="h-full [&>*]:w-full [&>*]:h-fit [&>*]:p-(--space) [&>*]:overflow-x-auto"
-                dangerouslySetInnerHTML={{ __html: html }}
-            />
-        </div>
-    );
+type CodeBlockContentProps =
+    | { children: string }
+    | { children: React.ReactNode; renderHtml?: boolean };
+
+function CodeBlock({
+    className,
+    code,
+    ...props
+}: React.ComponentProps<"div"> & {
+    code?: string;
+}) {
+    return <div className={cn("flex flex-col", className)} {...props} />;
 }
 
 function CodeBlockHeader({ className, ...props }: React.ComponentProps<"div">) {
@@ -37,16 +36,23 @@ function CodeBlockToolbar({
     ...props
 }: React.ComponentProps<"div">) {
     return (
-        <div className={cn("flex items-center gap-1", className)} {...props} />
+        <div className={cn("flex items-center gap-px", className)} {...props} />
     );
 }
 
 function CodeBlockContent({
     className,
+    html,
     ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & {
+    html: string
+}) {
     return (
-        <div className={cn("relative overflow-x-auto", className)} {...props} />
+        <div
+            className={cn("relative overflow-x-auto", className)}
+            {...props}
+            dangerouslySetInnerHTML={{ __html: html }}
+        />
     );
 }
 
