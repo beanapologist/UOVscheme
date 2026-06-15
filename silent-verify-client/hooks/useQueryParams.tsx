@@ -24,9 +24,10 @@ export function useQueryParams<T extends string[] | Record<string, string>>(
         }, {} as Record<string, string | null>);
     }
 
-    return Object.keys(input).reduce((acc, key) => {
-        acc[key] =
-            searchParams.get(key) ?? (input as Record<string, string>)[key];
+    return Object.entries(input).reduce((acc, key) => {
+        const [src, tgt] = key;
+        acc[src] =
+            searchParams.get(tgt) ?? (input as Record<string, string>)[tgt];
         return acc;
     }, {} as Record<string, string>);
 }

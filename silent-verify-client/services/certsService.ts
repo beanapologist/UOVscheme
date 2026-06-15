@@ -1,4 +1,4 @@
-import { api } from "@/api/client";
+import { api } from "@/lib/api";
 import { Flow, Wire } from "@/types";
 import { parseJSON } from "@/utils/functions";
 
@@ -82,10 +82,22 @@ export async function verifyAgentCert(key: string, cert: Wire) {
     return json.success ? json.data : text;
 }
 
-export async function getCertHtml(wire: Wire, autoprint = false) {
+export async function getCertHtml(
+    key: string,
+    {
+        wire,
+        autoprint = false,
+    }: {
+        wire: Wire;
+        autoprint?: boolean;
+    }
+) {
     const q = autoprint ? "?autoprint=1" : "";
     const resp = await api.post("/certs/print" + q, {
         body: JSON.stringify({ cert: wire }),
+        headers: {
+            "X-API-Key": key,
+        },
     });
     const html = await resp.text();
     return html;

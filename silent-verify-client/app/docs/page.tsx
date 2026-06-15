@@ -45,11 +45,7 @@ export default async function Page() {
             title: item.title,
             block: {
                 code: item.block,
-                html: await highlight({
-                    code: item.block,
-                    lang: "bash",
-                    theme: "github-dark",
-                }),
+                html: await highlight(item.block, "bash"),
             },
         }))
     )) as CodeBlock[];

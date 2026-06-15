@@ -4,31 +4,31 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { cn } from "@/lib/utils";
 import React from "react";
 
-type CodeBlockContentProps =
-    | { children: string }
-    | { children: React.ReactNode; renderHtml?: boolean };
-
 function CodeBlock({
     className,
-    code,
     ...props
-}: React.ComponentProps<"div"> & {
-    code?: string;
-}) {
-    return <div className={cn("flex flex-col", className)} {...props} />;
+}: React.ComponentProps<"div">) {
+    return <div className={cn("[--px:--spacing(4)] flex flex-col", className)} {...props} />;
 }
 
 function CodeBlockHeader({ className, ...props }: React.ComponentProps<"div">) {
     return (
         <div
-            className={cn("flex items-center justify-between", className)}
+            className={cn("px-(--px) py-4 flex items-center justify-between", className)}
             {...props}
         />
     );
 }
 
 function CodeBlockTitle({ className, ...props }: React.ComponentProps<"div">) {
-    return <div className={cn("", className)} {...props} />;
+    return <div className={cn(className)} {...props} />;
+}
+
+function CodeBlockCopybar({
+    className,
+    ...props
+}: React.ComponentProps<typeof CopyButton>) {
+    return <CopyButton className={cn(className)} {...props} />;
 }
 
 function CodeBlockToolbar({
@@ -45,11 +45,11 @@ function CodeBlockContent({
     html,
     ...props
 }: React.ComponentProps<"div"> & {
-    html: string
+    html: string;
 }) {
     return (
         <div
-            className={cn("relative overflow-x-auto", className)}
+            className={cn("relative rounded-lg overflow-x-auto", className)}
             {...props}
             dangerouslySetInnerHTML={{ __html: html }}
         />
@@ -60,6 +60,7 @@ export {
     CodeBlock,
     CodeBlockHeader,
     CodeBlockTitle,
+    CodeBlockCopybar,
     CodeBlockToolbar,
     CodeBlockContent,
 };

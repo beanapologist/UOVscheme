@@ -139,9 +139,8 @@
         position: relative;
         font-family: var(--font-body);
         font-size: var(--font-size);
-
+        image-rendering: pixelated; /* forces pixel-perfect rendering on the element */
         /* text-rendering: optimizeLegibility; */
-        /* @apply text-lg; */
     }
 
     button {
@@ -164,5 +163,9 @@
 
     .section-lg {
         @apply py-16 sm:py-24 lg:py-32 flex-1;
+    }
+
+    .shiki {
+        @apply px-4 py-4 rounded-[inherit];
     }
 }

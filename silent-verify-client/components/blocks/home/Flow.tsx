@@ -21,13 +21,11 @@ export default function Flow() {
     return (
         <section className="section">
             <Container className="flex flex-col gap-4">
-                <small className="uppercase text-primary">
-                    How it works
-                </small>
+                <small className="uppercase text-primary">How it works</small>
                 <h2>
                     Three Steps <br /> One Result
                 </h2>
-                <div className="mt-6 flex flex-col ring ring-border divide-y divide-border rounded-xl overflow-hidden md:flex-row md:divide-y-0 md:divide-x">
+                <div className="mt-6 flex flex-col border border-border divide-y divide-border rounded-xl overflow-hidden md:flex-row md:divide-y-0 md:divide-x">
                     {steps.map((step, index) => (
                         <div
                             className="p-8 flex-1 flex flex-col gap-4"

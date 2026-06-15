@@ -7,9 +7,6 @@ export const TAB_ACTIONS = {
     CERTS: "certs",
 } as const;
 
-export const USE_MESSAGE = {
-    
-}
 export const USE_PROCESS = [
     {
         title: "AI agent identity (PKI)",

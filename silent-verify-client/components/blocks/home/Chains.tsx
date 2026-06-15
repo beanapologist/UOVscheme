@@ -1,4 +1,4 @@
-import { api } from "@/api/client";
+import { api } from "@/lib/api";
 import { Container } from "@/components/layout";
 import { Badge } from "@/components/ui/Badge";
 
@@ -12,18 +12,10 @@ const FALLBACK_CHAINS = [
 ];
 
 export default async function SupportedChains() {
-    let chains = FALLBACK_CHAINS;
+    const resp = await api.get("/chains");
+    const data = (await resp.json()) as Chains;
 
-    try {
-        const resp = await api.get("/chains");
-        if (resp.ok) {
-            const data = (await resp.json()) as Chains;
-            chains = data.chains;
-        }
-    } catch {
-        // API may be unavailable during static build — use fallback catalog
-    }
-
+    const chains = data.chains ?? FALLBACK_CHAINS;
     return (
         <section className="section">
             <Container className="flex flex-col gap-8">

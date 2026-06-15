@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { Button } from "@/components/ui/Button";
 import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/ButtonGroup";
 import { LinkButton } from "@/components/ui/LinkButton";
-import { Field } from "@/components/ui/Field";
+import { Field, FieldLabel } from "@/components/ui/Field";
 import { Textarea } from "@/components/ui/Textarea";
 import { CertResult, Wire } from "@/types";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import {
 import { VerifyCertResult } from "./VerifyCertResult";
 import { Input } from "@/components/ui/Input";
 import { useQueryParams } from "@/hooks";
+import { FileBraces } from "lucide-react";
 
 type Json = string | null;
 type Data = CertResult | null;
@@ -31,7 +32,7 @@ export function Verify() {
     const [json, setJson] = useState<Json>(null);
     const [data, setData] = useState<Data>(null);
 
-    const { certs, saveCert, removeCert } = useWalletStore();
+    const { certs, setCert, removeCert } = useWalletStore();
 
     const decodeCert = (cert: Json) => {
         const rawCert = cert?.trim();
@@ -49,7 +50,7 @@ export function Verify() {
     const commitCert = (cert: Json) => {
         try {
             const wire = decodeCert(cert);
-            saveCert(wire);
+            setCert(wire);
         } catch (error) {
             const err = toMessage(error);
             toast.error(err);
@@ -103,7 +104,8 @@ export function Verify() {
         if (!certId) return;
         const exists = certs.find((c) => c.id === certId);
         if (!exists) return;
-        const data = stringify(exists);
+        const data = stringify(exists.cert);
+
         queueMicrotask(() => {
             updateJson(data);
             if (Number(run) === 1) {
@@ -206,8 +208,16 @@ export function Verify() {
                         )}
                     </TabsContent>
                     <TabsContent value="upload_certificates">
-                        <Field>
-                            <Input type="file" onChange={handleFile} />
+                        <Field className="w-full h-36 flex items-center justify-center border border-dashed border-border rounded-lg">
+                            <FileBraces size={50} />
+                            <FieldLabel className="w-fit! underline underline-offset-4 cursor-pointer hover:text-primary">
+                                Browse file
+                                <Input
+                                    className="hidden"
+                                    type="file"
+                                    onChange={handleFile}
+                                />
+                            </FieldLabel>
                         </Field>
                     </TabsContent>
                 </Tabs>

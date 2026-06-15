@@ -4,7 +4,8 @@ async function request(
     path: string,
     options?: RequestInit
 ): Promise<Response> {
-    return fetch(`${BASE_URL}${path}`, {
+    const url = path.startsWith("/api") ? path : `${BASE_URL}${path}`;
+    return fetch(url, {
         ...options,
         headers: {
             "Content-Type": "application/json",

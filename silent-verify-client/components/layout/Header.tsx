@@ -43,7 +43,7 @@ export default function Header() {
                         ))}
                     </ul>
                 </nav>
-                <nav className="w-full h-[calc(100%-var(--header-height))] fixed bottom-0 left-0 -z-1000 transition-transform duration-200 translate-x-full bg-background group-data-open/header:translate-x-full md:hidden">
+                <nav className="w-full h-0 fixed bottom-0 left-0 -z-1000 origin-top-left bg-background group-data-open/header:h-[calc(100%-var(--header-height))] md:hidden">
                     <ul className="flex flex-col gap-4">
                         {links.map(({ name, href }) => (
                             <li key={name}>

@@ -19,7 +19,7 @@ const buttonVariants = cva(
                     "bg-support text-support-foreground hover:bg-support/80 aria-expanded:bg-support aria-expanded:text-support-foreground",
                 ghost: "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
                 error: "bg-error/10 text-error hover:bg-error/20 focus-visible:border-error/40 focus-visible:ring-error/20",
-                link: "text-foreground underline-offset-4 hover:text-primary hover:underline",
+                link: "w-fit text-foreground underline-offset-4 hover:text-primary hover:underline",
             },
             size: {
                 default:

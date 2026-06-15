@@ -1,4 +1,4 @@
-import { api } from "@/api/client";
+import { api } from "@/lib/api";
 
 export async function validateKey(key: string) {
     const resp = await api.post("/billing/validate-key", {

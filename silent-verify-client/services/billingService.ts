@@ -1,4 +1,4 @@
-import { api } from "@/api/client";
+import { api } from "@/lib/api";
 
 export async function verifyApiKey(key: string) {
     const resp = await api.get("/billing/validate-key", {

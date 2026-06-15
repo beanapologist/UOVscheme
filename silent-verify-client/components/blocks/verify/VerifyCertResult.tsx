@@ -9,31 +9,31 @@ export function VerifyCertResult({ data, wire }: CertResult) {
         pubkey: data.pubkey_fp ?? wire.pubkey_fp ?? "-",
         agentDID: meta.agent_did ?? "-",
     };
+
     return (
-        <div>
-            <h2>{ok ? "Valid Certificate" : "Invalid or tampered"}</h2>
-            <dl>
-                <div>
-                    <dt>Crypto</dt>
-                    <dd>{info.crypto}</dd>
-                </div>
-                <div>
-                    <dt>Type</dt>
-                    <dd>{info.type}</dd>
-                </div>
-                <div>
-                    <dt>Agent DID</dt>
-                    <dd>{info.agentDID}</dd>
-                </div>
-                <div>
-                    <dt>Public Key</dt>
-                    <dd>{info.pubkey}</dd>
-                </div>
+        <div
+            className="p-4 flex flex-col gap-2 bg-surface border data-[type='pass']:border-success data-[type='fail']:border-warning rounded-xl"
+            data-type={info.crypto.toLowerCase()}
+        >
+            <h3>{ok ? "Valid Certificate" : "Invalid or tampered"}</h3>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-px">
+                <dt>Crypto</dt>
+                <dd>{info.crypto}</dd>
+
+                <dt>Type</dt>
+                <dd>{info.type}</dd>
+
+                <dt>Agent DID</dt>
+                <dd>{info.agentDID}</dd>
+
+                <dt>Public Key</dt>
+                <dd>{info.pubkey}</dd>
+
                 {data.detail && (
-                    <div>
+                    <>
                         <dt>Detail</dt>
                         <dd>{data.detail}</dd>
-                    </div>
+                    </>
                 )}
             </dl>
         </div>

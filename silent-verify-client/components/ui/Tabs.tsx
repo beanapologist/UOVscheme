@@ -4,6 +4,7 @@ import { Tabs as TabsPrimitive } from "@base-ui/react/tabs";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "./ScrollArea";
 
 function Tabs({
     className,
@@ -46,17 +47,19 @@ function TabsList({
     ...props
 }: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
     return (
-        <TabsPrimitive.List
-            data-slot="tabs-list"
-            data-variant={variant}
-            className={cn(tabsListVariants({ variant }), className)}
-            {...props}
-        >
-            {variant === "outline" && (
-                <TabsPrimitive.Indicator className="w-(--active-tab-width) h-[2px] absolute z-1 bottom-0 left-0 bg-primary rounded-[1px] translate-x-(--active-tab-left) translate-y-0 transition-[translate,width] duration-150 ease-in-out mix-blend-difference" />
-            )}
-            {children}
-        </TabsPrimitive.List>
+        <ScrollArea>
+            <TabsPrimitive.List
+                data-slot="tabs-list"
+                data-variant={variant}
+                className={cn(tabsListVariants({ variant }), className)}
+                {...props}
+            >
+                {variant === "outline" && (
+                    <TabsPrimitive.Indicator className="w-(--active-tab-width) h-[2px] absolute z-1 bottom-0 left-0 bg-primary rounded-[1px] translate-x-(--active-tab-left) translate-y-0 transition-[translate,width] duration-150 ease-in-out mix-blend-difference" />
+                )}
+                {children}
+            </TabsPrimitive.List>
+        </ScrollArea>
     );
 }
 

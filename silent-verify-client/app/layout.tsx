@@ -29,7 +29,7 @@ export default function RootLayout({
                     <Footer />
                     <Toaster
                         theme="dark"
-                        visibleToasts={1}
+                        visibleToasts={8}
                         toastOptions={{
                             classNames: {
                                 toast: "flex items-start!",

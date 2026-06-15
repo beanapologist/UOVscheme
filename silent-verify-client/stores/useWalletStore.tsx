@@ -8,8 +8,8 @@ const STORAGE_KEY = "sv_cert_wallet";
 type WalletStore = {
     certs: Cert[] | [];
     lastCert: Wire | null;
-    saveCert: (wire: Wire, label?: string) => Cert;
-    saveLastCert: (wire: Wire) => void;
+    setCert: (wire: Wire, label?: string) => Cert;
+    setLastCert: (wire: Wire) => void;
     removeCert: (certId: Cert["id"]) => void;
 };
 
@@ -18,7 +18,7 @@ export const useWalletStore = create<WalletStore>()(
         (set) => ({
             certs: [],
             lastCert: null,
-            saveCert: (wire, label) => {
+            setCert: (wire, label) => {
                 const id = `sv-${
                     crypto.randomUUID ? crypto.randomUUID() : Date.now()
                 }`;
@@ -56,7 +56,7 @@ export const useWalletStore = create<WalletStore>()(
                     ...state,
                     certs: state.certs.filter((c) => c.id !== id),
                 })),
-            saveLastCert: (wire) => {
+            setLastCert: (wire) => {
                 set((state) => ({
                     ...state,
                     lastCert: wire,

@@ -9,6 +9,7 @@ import { toMessage } from "@/utils/functions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ApiKeyDialog } from "@/components/shared/dialog";
+import Link from "next/link";
 
 export default function Hero() {
     const router = useRouter();
@@ -68,9 +69,13 @@ export default function Hero() {
                     <Button
                         variant="outline"
                         size="lg"
-                        onClick={() => handleFreeKey()}
-                    >
-                        Open API console
+                        nativeButton={false}
+                        render={<Link href="/docs">Open API console</Link>}
+                    />
+                </div>
+                <div>
+                    <Button variant="link" onClick={() => handleFreeKey()}>
+                        Get free key
                     </Button>
                 </div>
                 {isModalOpen && (
