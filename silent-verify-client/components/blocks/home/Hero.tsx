@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Container } from "@/components/layout";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -8,18 +7,14 @@ import { useEnsureApiKey } from "@/hooks/useEnsureApiKey";
 import { toMessage } from "@/utils/functions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ApiKeyDialog } from "@/components/shared/dialog";
-import Link from "next/link";
 
 export default function Hero() {
     const router = useRouter();
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const { mutateAsync: ensureApiKey } = useEnsureApiKey();
 
-    const handleFreeKey = async () => {
+    const handleConsole = async () => {
         try {
-            await ensureApiKey();
-            setIsModalOpen(true);
+            router.push("/docs");
         } catch (error) {
             const err = toMessage(error);
             toast.error(err);
@@ -69,21 +64,11 @@ export default function Hero() {
                     <Button
                         variant="outline"
                         size="lg"
-                        nativeButton={false}
-                        render={<Link href="/docs">Open API console</Link>}
-                    />
-                </div>
-                <div>
-                    <Button variant="link" onClick={() => handleFreeKey()}>
-                        Get free key
+                        onClick={() => handleConsole()}
+                    >
+                        Open API console
                     </Button>
                 </div>
-                {isModalOpen && (
-                    <ApiKeyDialog
-                        open={isModalOpen}
-                        onOpenChange={setIsModalOpen}
-                    />
-                )}
             </Container>
         </section>
     );
