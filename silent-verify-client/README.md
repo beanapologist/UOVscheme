@@ -76,6 +76,15 @@ yarn server        # server only
 
 Open [http://localhost:3000](http://localhost:3000) in your browser. Pages auto-refresh as you edit.
 
+## Production deployment
+
+The Next.js client is **not** included in the Railway API deploy (`impl/python` only). Deploy this folder separately:
+
+- **Vercel (recommended):** see [`docs/DEPLOY.md`](docs/DEPLOY.md) — root directory `silent-verify-client`
+- **Env template:** `.env.production.example`
+
+After deploying, set Railway `SILENTVERIFY_PUBLIC_URL` and `SILENTVERIFY_CORS_ORIGIN` to your frontend URL.
+
 ## Project Structure
 
 ```

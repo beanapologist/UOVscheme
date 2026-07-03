@@ -3,14 +3,12 @@
 
 SILENTVERIFY_ENV=production
 SILENTVERIFY_UOV_PROFILE=I_MIN
-SILENTVERIFY_PUBLIC_URL=https://silentverify.up.railway.app
+SILENTVERIFY_PUBLIC_URL=https://your-frontend.vercel.app
 SILENTVERIFY_USAGE_DB=/app/data/silentverify_usage.db
 
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_PRICE_ID=price_1TpABkEWOkqksVfIXhEK0kxf
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# Optional
-# SILENTVERIFY_ISSUER_SEED=<random-int>
-# SILENTVERIFY_PRO_MONTHLY_QUOTA=100000
-# SILENTVERIFY_CORS_ORIGIN=https://your-frontend-host
+# Optional — set to your Vercel / frontend host after deploying silent-verify-client
+# SILENTVERIFY_CORS_ORIGIN=https://your-frontend.vercel.app
