@@ -44,15 +44,25 @@ yarn install  # or: yarn
 
 ### Configuration
 
-Create a `.env` file in the root of the `client/` folder:
+Create `.env.local` in `silent-verify-client/` (see `.env.example`):
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8765
 NEXT_PUBLIC_OPENAPI_URL=http://localhost:8765/openapi.json
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_APP_NAME=
-NEXT_PUBLIC_APP_ENV=                        # dev | staging | prod
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 ```
+
+Stripe Pro checkout also needs backend env in `impl/python/.env` (see `impl/python/.env.example`):
+
+```env
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_PRICE_ID=price_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+SILENTVERIFY_PUBLIC_URL=http://localhost:3000
+```
+
+Checkout uses Stripe-hosted sessions via `POST /api/v1/billing/checkout`; after payment, users return to `/?checkout=success&session_id=…` and receive their Pro API key once.
 
 ### Development
 

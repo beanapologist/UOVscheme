@@ -7,3 +7,7 @@
 # WASM build output (CI regenerates for Pages; local: `wasm-pack` in `web/uov-wasm`)
 web/pkg/
 web/uov-wasm/target/
+
+# Secrets
+impl/python/.env
+impl/python/.env.test

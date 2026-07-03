@@ -9,8 +9,8 @@ export const useEnsureApiKey = () => {
     return useMutation({
         mutationFn: async () => {
             if (apiKey) {
-                const isValid = await verifyApiKey(apiKey);
-                if (isValid) return apiKey;
+                const result = await verifyApiKey(apiKey);
+                if (result.valid) return apiKey;
                 clearApiKey();
             }
             const newApiKey = await fetchFreeKey();

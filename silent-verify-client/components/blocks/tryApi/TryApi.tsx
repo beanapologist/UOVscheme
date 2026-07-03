@@ -261,21 +261,25 @@ export function TryApi({
     useEffect(() => {
         if (!lastCert) return;
         const cert = stringify(lastCert);
-        setFlow((prev) => ({
-            ...prev,
-            certificate: cert,
-            certificate_optional: cert,
-        }));
+        queueMicrotask(() => {
+            setFlow((prev) => ({
+                ...prev,
+                certificate: cert,
+                certificate_optional: cert,
+            }));
+        });
     }, [lastCert]);
 
     useEffect(() => {
-        if (demo === "agent") {
-            handleAction("agent_pki");
-        }
-        if (Number(run) === 1) {
-            handleAgent(apiKey, flow);
-        }
-        assignApiKey(apiKey, isDevKeyAllowed);
+        queueMicrotask(() => {
+            if (demo === "agent") {
+                handleAction("agent_pki");
+            }
+            if (Number(run) === 1) {
+                void handleAgent(apiKey, flow);
+            }
+            void assignApiKey(apiKey, isDevKeyAllowed);
+        });
         // Hydrate from URL query params once on mount.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
